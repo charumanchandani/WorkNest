@@ -77,10 +77,10 @@ const userSchema = new mongoose.Schema(
       maxlength: [100, 'Location cannot exceed 100 characters'],
     },
     department: {
-      type: String,
-      trim: true,
-      default: '',
-      maxlength: [100, 'Department cannot exceed 100 characters'],
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Department',
+      default: null,
+      index: true,
     },
     status: {
       type: String,
@@ -166,6 +166,20 @@ userSchema.methods.comparePassword = async function (candidatePassword) {
 
 // Return safe user/employee object omitting password and internal details
 userSchema.methods.toSafeObject = function () {
+  let deptData = null;
+  if (this.department) {
+    if (this.department._id) {
+      deptData = {
+        id: this.department._id.toString(),
+        name: this.department.name,
+        code: this.department.code,
+        status: this.department.status,
+      };
+    } else if (mongoose.Types.ObjectId.isValid(this.department)) {
+      deptData = { id: this.department.toString() };
+    }
+  }
+
   return {
     id: this._id.toString(),
     employeeId: this.employeeId,
@@ -178,7 +192,7 @@ userSchema.methods.toSafeObject = function () {
     jobTitle: this.jobTitle || 'Associate',
     joiningDate: this.joiningDate,
     location: this.location || 'Remote',
-    department: this.department || '',
+    department: deptData,
     status: this.status || (this.isActive ? 'ACTIVE' : 'INACTIVE'),
     isActive: this.isActive,
     createdAt: this.createdAt,

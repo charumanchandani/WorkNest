@@ -14,10 +14,9 @@ import {
   UserCheck,
   Building2,
   Clock,
-  CheckCircle2,
 } from 'lucide-react';
 import { useAuth } from '../hooks';
-import { Button, Badge, Card, CardHeader, CardTitle, CardDescription, CardContent, Spinner, Alert, Divider } from '../components/ui';
+import { Button, Badge, Card, CardHeader, CardTitle, CardDescription, CardContent, Spinner, Alert } from '../components/ui';
 import { EmployeeFormModal, EmployeeStatusModal } from '../components/employees';
 import employeeService from '../services/employeeService';
 
@@ -274,6 +273,26 @@ export const EmployeeDetailPage = () => {
 
               <div className="flex items-center justify-between py-2 border-b border-border/60">
                 <span className="text-muted-foreground flex items-center gap-2">
+                  <Building2 className="w-3.5 h-3.5 text-muted-foreground" />
+                  Department
+                </span>
+                {employee.department?.name ? (
+                  <Link
+                    to={`/app/departments/${employee.department.id}`}
+                    className="font-semibold text-teal-600 dark:text-teal-400 hover:underline flex items-center gap-1.5"
+                  >
+                    <span>{employee.department.name}</span>
+                    <span className="font-mono text-[10px] opacity-75">
+                      [{employee.department.code}]
+                    </span>
+                  </Link>
+                ) : (
+                  <span className="text-muted-foreground italic">Unassigned</span>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between py-2 border-b border-border/60">
+                <span className="text-muted-foreground flex items-center gap-2">
                   <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
                   Date of Joining
                 </span>
@@ -282,23 +301,13 @@ export const EmployeeDetailPage = () => {
                 </span>
               </div>
 
-              <div className="flex items-center justify-between py-2 border-b border-border/60">
+              <div className="flex items-center justify-between py-2">
                 <span className="text-muted-foreground flex items-center gap-2">
                   <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
                   Workplace Location
                 </span>
                 <span className="font-semibold text-foreground">
                   {employee.location || 'Remote'}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between py-2">
-                <span className="text-muted-foreground flex items-center gap-2">
-                  <Building2 className="w-3.5 h-3.5 text-muted-foreground" />
-                  Department
-                </span>
-                <span className="font-semibold text-foreground">
-                  {employee.department || 'General (Phase 6)'}
                 </span>
               </div>
             </div>

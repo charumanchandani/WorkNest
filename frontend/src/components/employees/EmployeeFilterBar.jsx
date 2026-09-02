@@ -1,6 +1,7 @@
-import React from 'react';
-import { Search, UserPlus, Filter, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, UserPlus, X } from 'lucide-react';
 import { Button, Input, Select } from '../ui';
+import departmentService from '../../services/departmentService';
 
 export const EmployeeFilterBar = ({
   search,
@@ -9,11 +10,38 @@ export const EmployeeFilterBar = ({
   onRoleChange,
   status,
   onStatusChange,
+  department,
+  onDepartmentChange,
   onAddEmployee,
   canManage = false,
   onResetFilters,
 }) => {
-  const hasActiveFilters = Boolean(search || (role && role !== 'ALL') || (status && status !== 'ALL'));
+  const [departments, setDepartments] = useState([]);
+
+  useEffect(() => {
+    const fetchDepts = async () => {
+      try {
+        const res = await departmentService.getDepartments({
+          limit: 50,
+          status: 'ACTIVE',
+        });
+        if (res?.data?.departments) {
+          setDepartments(res.data.departments);
+        }
+      } catch {
+        // Non-blocking
+      }
+    };
+
+    fetchDepts();
+  }, []);
+
+  const hasActiveFilters = Boolean(
+    search ||
+      (role && role !== 'ALL') ||
+      (status && status !== 'ALL') ||
+      (department && department !== 'ALL')
+  );
 
   const roleOptions = [
     { value: 'ALL', label: 'All Roles' },
@@ -28,9 +56,17 @@ export const EmployeeFilterBar = ({
     { value: 'INACTIVE', label: 'Inactive' },
   ];
 
+  const departmentOptions = [
+    { value: 'ALL', label: 'All Departments' },
+    ...departments.map((d) => ({
+      value: d.id,
+      label: d.name,
+    })),
+  ];
+
   return (
     <div className="space-y-3">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
         {/* Search input */}
         <div className="flex-1 max-w-md">
           <Input
@@ -47,6 +83,17 @@ export const EmployeeFilterBar = ({
         <div className="flex flex-wrap items-center gap-2.5">
           <div className="w-36">
             <Select
+              id="department-filter"
+              options={departmentOptions}
+              value={department || 'ALL'}
+              onChange={(e) => onDepartmentChange(e.target.value)}
+              className="text-xs py-1.5"
+              aria-label="Filter by department"
+            />
+          </div>
+
+          <div className="w-32">
+            <Select
               id="role-filter"
               options={roleOptions}
               value={role || 'ALL'}
@@ -56,7 +103,7 @@ export const EmployeeFilterBar = ({
             />
           </div>
 
-          <div className="w-36">
+          <div className="w-32">
             <Select
               id="status-filter"
               options={statusOptions}

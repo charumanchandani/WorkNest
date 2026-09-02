@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import { ENV } from '../config/env.js';
 import User from '../models/User.js';
+import Department from '../models/Department.js';
 
 const seedUsers = async () => {
   if (ENV.NODE_ENV === 'production') {
@@ -14,6 +15,7 @@ const seedUsers = async () => {
 
     const defaultPassword = 'Password123!';
 
+    // 1. Seed Core Users
     const sampleEmployees = [
       {
         employeeId: 'WN-0001',
@@ -107,30 +109,107 @@ const seedUsers = async () => {
       },
     ];
 
+    const savedUsersMap = {};
+
     for (const empData of sampleEmployees) {
-      const existing = await User.findOne({ email: empData.email });
-      if (existing) {
-        existing.employeeId = empData.employeeId;
-        existing.firstName = empData.firstName;
-        existing.lastName = empData.lastName;
-        existing.name = empData.name;
-        existing.role = empData.role;
-        existing.jobTitle = empData.jobTitle;
-        existing.phone = empData.phone;
-        existing.location = empData.location;
-        existing.joiningDate = empData.joiningDate;
-        existing.status = empData.status;
-        existing.isActive = empData.isActive;
-        existing.password = empData.password;
-        await existing.save();
-        console.log(`[Seed] Updated ${empData.role} (${empData.employeeId}): ${empData.email}`);
+      let user = await User.findOne({ email: empData.email });
+      if (user) {
+        user.employeeId = empData.employeeId;
+        user.firstName = empData.firstName;
+        user.lastName = empData.lastName;
+        user.name = empData.name;
+        user.role = empData.role;
+        user.jobTitle = empData.jobTitle;
+        user.phone = empData.phone;
+        user.location = empData.location;
+        user.joiningDate = empData.joiningDate;
+        user.status = empData.status;
+        user.isActive = empData.isActive;
+        user.password = empData.password;
+        await user.save();
       } else {
-        await User.create(empData);
-        console.log(`[Seed] Created ${empData.role} (${empData.employeeId}): ${empData.email}`);
+        user = await User.create(empData);
+      }
+      savedUsersMap[empData.email] = user;
+    }
+
+    // 2. Seed Standard Departments with Managers
+    const sampleDepartments = [
+      {
+        name: 'Engineering',
+        code: 'ENG',
+        description: 'Software development, infrastructure, and technical product engineering.',
+        managerEmail: 'manager@worknest.io',
+        status: 'ACTIVE',
+      },
+      {
+        name: 'People & Culture',
+        code: 'HR',
+        description: 'Human resources, talent acquisition, onboarding, and employee relations.',
+        managerEmail: 'admin@worknest.io',
+        status: 'ACTIVE',
+      },
+      {
+        name: 'Product & Design',
+        code: 'PROD',
+        description: 'User experience design, product strategy, and user research.',
+        managerEmail: 'amara.okafor@worknest.io',
+        status: 'ACTIVE',
+      },
+      {
+        name: 'Workplace Operations',
+        code: 'OPS',
+        description: 'Facility management, logistics, and workplace administration.',
+        managerEmail: 'amara.okafor@worknest.io',
+        status: 'ACTIVE',
+      },
+    ];
+
+    const savedDeptsMap = {};
+
+    for (const deptData of sampleDepartments) {
+      const managerUser = savedUsersMap[deptData.managerEmail];
+      let dept = await Department.findOne({ code: deptData.code });
+      if (dept) {
+        dept.name = deptData.name;
+        dept.description = deptData.description;
+        dept.manager = managerUser ? managerUser._id : null;
+        dept.status = deptData.status;
+        await dept.save();
+      } else {
+        dept = await Department.create({
+          name: deptData.name,
+          code: deptData.code,
+          description: deptData.description,
+          manager: managerUser ? managerUser._id : null,
+          status: deptData.status,
+        });
+      }
+      savedDeptsMap[deptData.code] = dept;
+      console.log(`[Seed] Seeded Department [${dept.code}]: ${dept.name}`);
+    }
+
+    // 3. Link Employees to Departments
+    const assignments = [
+      { email: 'admin@worknest.io', deptCode: 'HR' },
+      { email: 'manager@worknest.io', deptCode: 'ENG' },
+      { email: 'david.chen@worknest.io', deptCode: 'ENG' },
+      { email: 'elena.rostova@worknest.io', deptCode: 'PROD' },
+      { email: 'employee@worknest.io', deptCode: 'PROD' },
+      { email: 'amara.okafor@worknest.io', deptCode: 'OPS' },
+      { email: 'liam.nakamura@worknest.io', deptCode: 'HR' },
+    ];
+
+    for (const assign of assignments) {
+      const u = savedUsersMap[assign.email];
+      const d = savedDeptsMap[assign.deptCode];
+      if (u && d) {
+        u.department = d._id;
+        await u.save();
       }
     }
 
-    console.log('[Seed] Successfully seeded development employees.');
+    console.log('[Seed] Successfully seeded development employees and departments.');
     console.log('--- Development Test Accounts ---');
     console.log('Admin:    admin@worknest.io    / Password123!');
     console.log('Manager:  manager@worknest.io  / Password123!');

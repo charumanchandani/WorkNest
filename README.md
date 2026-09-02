@@ -37,13 +37,13 @@ WorkNest follows a decoupled client-server architecture with clear separation of
 WorkNest/
 ├── frontend/                # Client application (React + Vite + Tailwind CSS)
 │   ├── src/
-│   │   ├── components/      # UI components, Landing sections, App Shell & Employees
+│   │   ├── components/      # UI components, Landing sections, App Shell, Employees, Departments
 │   │   ├── layouts/         # AppLayout (Sidebar, Topbar, Content Outlet)
-│   │   ├── pages/           # LandingPage, LoginPage, RegisterPage, EmployeeDashboard, EmployeesPage, EmployeeDetailPage
+│   │   ├── pages/           # LandingPage, LoginPage, RegisterPage, EmployeeDashboard, EmployeesPage, EmployeeDetailPage, DepartmentsPage, DepartmentDetailPage
 │   │   ├── routes/          # AppRoutes, ProtectedRoute, PublicOnlyRoute
 │   │   ├── context/         # AuthContext, ThemeContext
 │   │   ├── hooks/           # useAuth, useTheme
-│   │   ├── services/        # apiClient, authService, employeeService
+│   │   ├── services/        # apiClient, authService, employeeService, departmentService
 │   │   ├── utils/           # Helper functions & formatting utilities
 │   │   ├── constants/       # App constants and configuration tokens
 │   │   └── assets/          # Static assets and icons
@@ -52,12 +52,12 @@ WorkNest/
 ├── backend/                 # API server (Node.js + Express + MongoDB)
 │   ├── src/
 │   │   ├── config/          # Database connection & environment configuration
-│   │   ├── controllers/     # authController, employeeController, healthController
+│   │   ├── controllers/     # authController, employeeController, departmentController, healthController
 │   │   ├── middleware/      # authMiddleware (protect), roleMiddleware (authorizeRoles), errorHandler
-│   │   ├── models/          # User (Mongoose schema with employee profile fields)
-│   │   ├── routes/          # authRoutes, employeeRoutes, healthRoutes
-│   │   ├── scripts/         # seedUsers.js (development test accounts)
-│   │   ├── services/        # employeeService
+│   │   ├── models/          # User, Department
+│   │   ├── routes/          # authRoutes, employeeRoutes, departmentRoutes, healthRoutes
+│   │   ├── scripts/         # seedUsers.js (development test accounts & standard departments)
+│   │   ├── services/        # employeeService, departmentService
 │   │   └── utils/           # token, responseHandler
 │   ├── server.js            # Server entrypoint & Express bootstrapping
 │   └── package.json
@@ -75,8 +75,8 @@ WorkNest enforces role authorization on both backend endpoints and frontend rout
 | Role | Description | Enrollment / Access |
 | :--- | :--- | :--- |
 | **`EMPLOYEE`** | Self-service access for personal attendance, time-off requests, assigned tasks, and company resources. | Default for public registration |
-| **`MANAGER`** | Department-level access for team availability monitoring, leave approval queues, and viewing the employee directory. | Organization-assigned / Seeded |
-| **`ADMIN`** | Enterprise-level access for full employee provisioning, role assignment, status toggling, and global workplace policies. | Organization-assigned / Seeded |
+| **`MANAGER`** | Department-level access for team availability monitoring, viewing the employee directory, and department oversight. | Organization-assigned / Seeded |
+| **`ADMIN`** | Enterprise-level access for full employee provisioning, role assignment, department creation/editing/status, manager allocation, and global workplace policies. | Organization-assigned / Seeded |
 
 ---
 
@@ -95,11 +95,22 @@ WorkNest enforces role authorization on both backend endpoints and frontend rout
 
 | Method | Endpoint | Access | Description |
 | :--- | :--- | :--- | :--- |
-| `GET` | `/api/employees` | Admin, Manager | List employees with server-side pagination, search, and role/status filters |
+| `GET` | `/api/employees` | Admin, Manager | List employees with server-side pagination, search, role/status filters, and department filter |
 | `GET` | `/api/employees/:id` | Admin, Manager | Retrieve full profile details of a single employee |
-| `POST` | `/api/employees` | Admin | Create and provision a new employee account |
-| `PATCH` | `/api/employees/:id` | Admin | Update employee profile information |
+| `POST` | `/api/employees` | Admin | Create and provision a new employee account with optional department assignment |
+| `PATCH` | `/api/employees/:id` | Admin | Update employee profile information and department |
 | `PATCH` | `/api/employees/:id/status` | Admin | Activate or deactivate employee account (with last active admin protection) |
+
+### 3. Departments & Organization Structure (`/api/departments`)
+
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/departments` | Admin, Manager | List departments with pagination, search, status filter, and live employee counts |
+| `GET` | `/api/departments/:id` | Admin, Manager | Retrieve department details, leadership info, employee count, and assigned staff preview |
+| `POST` | `/api/departments` | Admin | Create a new department with unique name, uppercase code, and optional manager |
+| `PATCH` | `/api/departments/:id` | Admin | Update department name, code, description, and manager |
+| `PATCH` | `/api/departments/:id/status` | Admin | Activate or deactivate department (deactivation blocked if active employees remain) |
+| `PATCH` | `/api/departments/:id/manager` | Admin | Assign or remove department manager (requires active Manager or Admin user) |
 
 ---
 
@@ -140,7 +151,7 @@ By default, the backend API will run on `http://localhost:5000`.
 ```bash
 npm run seed
 ```
-Creates default development accounts:
+Creates default development accounts & standard departments:
 - **Admin**: `admin@worknest.io` / `Password123!`
 - **Manager**: `manager@worknest.io` / `Password123!`
 - **Employee**: `employee@worknest.io` / `Password123!`
@@ -190,7 +201,7 @@ VITE_API_BASE_URL=http://localhost:5000/api
 
 ### Backend
 - `npm run dev`: Runs the server with Nodemon auto-reloading
-- `npm run seed`: Seeds development test accounts
+- `npm run seed`: Seeds development test accounts and standard departments
 - `npm start`: Runs the server in production mode
 - `npm run lint`: Runs ESLint / code style checks
 

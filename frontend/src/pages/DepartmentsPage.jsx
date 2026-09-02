@@ -1,26 +1,22 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { Users, UserPlus, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Building2, Plus, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '../hooks';
 import { Button, Alert, Spinner, EmptyState, Badge } from '../components/ui';
 import {
-  EmployeeFilterBar,
-  EmployeeTable,
-  EmployeeFormModal,
-  EmployeeStatusModal,
-} from '../components/employees';
-import employeeService from '../services/employeeService';
+  DepartmentFilterBar,
+  DepartmentTable,
+  DepartmentFormModal,
+  DepartmentStatusModal,
+  DepartmentManagerModal,
+} from '../components/departments';
+import departmentService from '../services/departmentService';
 
-export const EmployeesPage = () => {
+export const DepartmentsPage = () => {
   const { user } = useAuth();
   const isAdmin = user?.role === 'ADMIN';
-  const [searchParams, setSearchParams] = useSearchParams();
-
-  // Initial filters from URL
-  const initialDept = searchParams.get('department') || 'ALL';
 
   // State
-  const [employees, setEmployees] = useState([]);
+  const [departments, setDepartments] = useState([]);
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
@@ -34,29 +30,23 @@ export const EmployeesPage = () => {
   // Filters
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [roleFilter, setRoleFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
-  const [departmentFilter, setDepartmentFilter] = useState(initialDept);
   const [page, setPage] = useState(1);
 
   // Modals state
   const [formModalOpen, setFormModalOpen] = useState(false);
-  const [editingEmployee, setEditingEmployee] = useState(null);
+  const [editingDepartment, setEditingDepartment] = useState(null);
   const [statusModalOpen, setStatusModalOpen] = useState(false);
-  const [targetStatusEmployee, setTargetStatusEmployee] = useState(null);
+  const [targetStatusDepartment, setTargetStatusDepartment] = useState(null);
+  const [managerModalOpen, setManagerModalOpen] = useState(false);
+  const [targetManagerDepartment, setTargetManagerDepartment] = useState(null);
 
   const [formSubmitting, setFormSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
   const [statusSubmitting, setStatusSubmitting] = useState(false);
   const [statusError, setStatusError] = useState('');
-
-  // Sync department filter if URL param changes
-  useEffect(() => {
-    const deptParam = searchParams.get('department');
-    if (deptParam) {
-      setDepartmentFilter(deptParam);
-    }
-  }, [searchParams]);
+  const [managerSubmitting, setManagerSubmitting] = useState(false);
+  const [managerError, setManagerError] = useState('');
 
   // Debounce search input
   useEffect(() => {
@@ -67,44 +57,42 @@ export const EmployeesPage = () => {
     return () => clearTimeout(handler);
   }, [search]);
 
-  // Fetch employees
-  const fetchEmployees = useCallback(async () => {
+  // Fetch departments
+  const fetchDepartments = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
-      const res = await employeeService.getEmployees({
+      const res = await departmentService.getDepartments({
         page,
         limit: 10,
         search: debouncedSearch,
-        role: roleFilter,
         status: statusFilter,
-        department: departmentFilter,
       });
 
       if (res?.data) {
-        setEmployees(res.data.employees || []);
+        setDepartments(res.data.departments || []);
         setPagination(res.data.pagination || { page: 1, limit: 10, total: 0, totalPages: 1 });
       }
     } catch (err) {
-      setError(err.formattedMessage || 'Failed to load employees list.');
+      setError(err.formattedMessage || 'Failed to load departments list.');
     } finally {
       setLoading(false);
     }
-  }, [page, debouncedSearch, roleFilter, statusFilter, departmentFilter]);
+  }, [page, debouncedSearch, statusFilter]);
 
   useEffect(() => {
-    fetchEmployees();
-  }, [fetchEmployees]);
+    fetchDepartments();
+  }, [fetchDepartments]);
 
   // Handlers for Add / Edit
   const handleOpenAdd = () => {
-    setEditingEmployee(null);
+    setEditingDepartment(null);
     setFormError('');
     setFormModalOpen(true);
   };
 
-  const handleOpenEdit = (emp) => {
-    setEditingEmployee(emp);
+  const handleOpenEdit = (dept) => {
+    setEditingDepartment(dept);
     setFormError('');
     setFormModalOpen(true);
   };
@@ -114,28 +102,27 @@ export const EmployeesPage = () => {
       setFormSubmitting(true);
       setFormError('');
 
-      if (editingEmployee) {
-        await employeeService.updateEmployee(editingEmployee.id, formData);
-        setSuccessMessage(`Employee '${formData.name}' updated successfully.`);
+      if (editingDepartment) {
+        await departmentService.updateDepartment(editingDepartment.id, formData);
+        setSuccessMessage(`Department '${formData.name}' updated successfully.`);
       } else {
-        await employeeService.createEmployee(formData);
-        setSuccessMessage(`Employee '${formData.name}' created and enrolled successfully.`);
+        await departmentService.createDepartment(formData);
+        setSuccessMessage(`Department '${formData.name}' created successfully.`);
       }
 
       setFormModalOpen(false);
-      fetchEmployees();
-
+      fetchDepartments();
       setTimeout(() => setSuccessMessage(''), 4000);
     } catch (err) {
-      setFormError(err.formattedMessage || 'Failed to save employee.');
+      setFormError(err.formattedMessage || 'Failed to save department.');
     } finally {
       setFormSubmitting(false);
     }
   };
 
   // Handlers for Status Toggle
-  const handleOpenStatusModal = (emp) => {
-    setTargetStatusEmployee(emp);
+  const handleOpenStatusModal = (dept) => {
+    setTargetStatusDepartment(dept);
     setStatusError('');
     setStatusModalOpen(true);
   };
@@ -144,37 +131,45 @@ export const EmployeesPage = () => {
     try {
       setStatusSubmitting(true);
       setStatusError('');
-      await employeeService.updateEmployeeStatus(id, newStatus);
-      setSuccessMessage(`Employee status updated to ${newStatus}.`);
+      await departmentService.updateDepartmentStatus(id, newStatus);
+      setSuccessMessage(`Department status updated to ${newStatus}.`);
       setStatusModalOpen(false);
-      fetchEmployees();
-
+      fetchDepartments();
       setTimeout(() => setSuccessMessage(''), 4000);
     } catch (err) {
-      setStatusError(err.formattedMessage || 'Failed to update employee status.');
+      setStatusError(err.formattedMessage || 'Failed to update department status.');
     } finally {
       setStatusSubmitting(false);
     }
   };
 
-  const handleDepartmentChange = (deptId) => {
-    setDepartmentFilter(deptId);
-    setPage(1);
-    if (deptId === 'ALL') {
-      searchParams.delete('department');
-      setSearchParams(searchParams);
-    } else {
-      setSearchParams({ department: deptId });
+  // Handlers for Manager Assignment
+  const handleOpenManagerModal = (dept) => {
+    setTargetManagerDepartment(dept);
+    setManagerError('');
+    setManagerModalOpen(true);
+  };
+
+  const handleManagerConfirm = async (id, managerId) => {
+    try {
+      setManagerSubmitting(true);
+      setManagerError('');
+      await departmentService.updateDepartmentManager(id, managerId);
+      setSuccessMessage('Department manager updated successfully.');
+      setManagerModalOpen(false);
+      fetchDepartments();
+      setTimeout(() => setSuccessMessage(''), 4000);
+    } catch (err) {
+      setManagerError(err.formattedMessage || 'Failed to update department manager.');
+    } finally {
+      setManagerSubmitting(false);
     }
   };
 
   const handleResetFilters = () => {
     setSearch('');
     setDebouncedSearch('');
-    setRoleFilter('ALL');
     setStatusFilter('ALL');
-    setDepartmentFilter('ALL');
-    setSearchParams({});
     setPage(1);
   };
 
@@ -185,14 +180,14 @@ export const EmployeesPage = () => {
         <div className="space-y-1">
           <div className="flex items-center gap-2.5">
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-              Employee Directory
+              Departments & Teams
             </h1>
             <Badge variant="primary" size="md">
-              {pagination.total} Total
+              {pagination.total} Units
             </Badge>
           </div>
           <p className="text-xs sm:text-sm text-muted-foreground">
-            Manage team members, organizational roles, departments, and workplace employment status.
+            Organize teams, managers, and workforce allocation across WorkNest.
           </p>
         </div>
 
@@ -201,9 +196,9 @@ export const EmployeesPage = () => {
             variant="outline"
             size="sm"
             leftIcon={RefreshCw}
-            onClick={fetchEmployees}
+            onClick={fetchDepartments}
             disabled={loading}
-            aria-label="Refresh employee list"
+            aria-label="Refresh departments list"
           >
             Refresh
           </Button>
@@ -212,16 +207,16 @@ export const EmployeesPage = () => {
             <Button
               variant="primary"
               size="sm"
-              leftIcon={UserPlus}
+              leftIcon={Plus}
               onClick={handleOpenAdd}
             >
-              Add Employee
+              Add Department
             </Button>
           )}
         </div>
       </div>
 
-      {/* Success banner */}
+      {/* Success Banner */}
       {successMessage && (
         <Alert
           variant="success"
@@ -232,16 +227,16 @@ export const EmployeesPage = () => {
         </Alert>
       )}
 
-      {/* Error banner */}
+      {/* Error Banner */}
       {error && (
         <Alert
           variant="destructive"
-          title="Failed to Load Employees"
+          title="Failed to Load Departments"
           onDismiss={() => setError('')}
         >
           <div className="flex items-center justify-between">
             <span>{error}</span>
-            <Button variant="outline" size="sm" onClick={fetchEmployees} className="ml-4">
+            <Button variant="outline" size="sm" onClick={fetchDepartments} className="ml-4">
               Retry
             </Button>
           </div>
@@ -249,52 +244,45 @@ export const EmployeesPage = () => {
       )}
 
       {/* 2. Filter & Search Bar */}
-      <EmployeeFilterBar
+      <DepartmentFilterBar
         search={search}
         onSearchChange={setSearch}
-        role={roleFilter}
-        onRoleChange={(r) => {
-          setRoleFilter(r);
-          setPage(1);
-        }}
         status={statusFilter}
         onStatusChange={(s) => {
           setStatusFilter(s);
           setPage(1);
         }}
-        department={departmentFilter}
-        onDepartmentChange={handleDepartmentChange}
         onResetFilters={handleResetFilters}
-        onAddEmployee={handleOpenAdd}
+        onAddDepartment={handleOpenAdd}
         canManage={isAdmin}
       />
 
       {/* 3. Content Area */}
       {loading ? (
         <div className="min-h-[300px] flex flex-col items-center justify-center p-12 bg-card rounded-xl border border-border">
-          <Spinner size="lg" label="Loading employee directory..." />
+          <Spinner size="lg" label="Loading organizational departments..." />
           <p className="text-xs text-muted-foreground mt-3 font-medium">
-            Fetching employee records...
+            Fetching department structures...
           </p>
         </div>
-      ) : employees.length === 0 ? (
+      ) : departments.length === 0 ? (
         <div className="p-8 bg-card rounded-xl border border-border">
           <EmptyState
-            icon={Users}
-            title={debouncedSearch || roleFilter !== 'ALL' || statusFilter !== 'ALL' || departmentFilter !== 'ALL' ? 'No matching employees' : 'No employees enrolled yet'}
+            icon={Building2}
+            title={debouncedSearch || statusFilter !== 'ALL' ? 'No matching departments' : 'No departments configured'}
             description={
-              debouncedSearch || roleFilter !== 'ALL' || statusFilter !== 'ALL' || departmentFilter !== 'ALL'
-                ? 'No employee profiles match your current search and filter criteria.'
-                : 'Start building your organization by adding your first employee.'
+              debouncedSearch || statusFilter !== 'ALL'
+                ? 'No departments match your current search and status filter criteria.'
+                : 'Define organizational departments to structure staff allocation and management lines.'
             }
             action={
-              debouncedSearch || roleFilter !== 'ALL' || statusFilter !== 'ALL' || departmentFilter !== 'ALL' ? (
+              debouncedSearch || statusFilter !== 'ALL' ? (
                 <Button variant="outline" size="sm" onClick={handleResetFilters}>
                   Clear Filters
                 </Button>
               ) : isAdmin ? (
-                <Button variant="primary" size="sm" leftIcon={UserPlus} onClick={handleOpenAdd}>
-                  Add First Employee
+                <Button variant="primary" size="sm" leftIcon={Plus} onClick={handleOpenAdd}>
+                  Add First Department
                 </Button>
               ) : undefined
             }
@@ -302,10 +290,11 @@ export const EmployeesPage = () => {
         </div>
       ) : (
         <div className="space-y-4">
-          <EmployeeTable
-            employees={employees}
+          <DepartmentTable
+            departments={departments}
             onEdit={handleOpenEdit}
             onToggleStatus={handleOpenStatusModal}
+            onAssignManager={handleOpenManagerModal}
             canManage={isAdmin}
           />
 
@@ -315,7 +304,7 @@ export const EmployeesPage = () => {
               <div>
                 Showing page <strong className="text-foreground">{pagination.page}</strong> of{' '}
                 <strong className="text-foreground">{pagination.totalPages}</strong> (
-                {pagination.total} total records)
+                {pagination.total} total departments)
               </div>
 
               <div className="flex items-center gap-2">
@@ -345,26 +334,36 @@ export const EmployeesPage = () => {
       )}
 
       {/* 4. Add / Edit Modal */}
-      <EmployeeFormModal
+      <DepartmentFormModal
         isOpen={formModalOpen}
         onClose={() => setFormModalOpen(false)}
         onSubmit={handleFormSubmit}
-        initialData={editingEmployee}
+        initialData={editingDepartment}
         isSubmitting={formSubmitting}
         error={formError}
       />
 
-      {/* 5. Activate / Deactivate Modal */}
-      <EmployeeStatusModal
+      {/* 5. Status Modal */}
+      <DepartmentStatusModal
         isOpen={statusModalOpen}
         onClose={() => setStatusModalOpen(false)}
         onConfirm={handleStatusConfirm}
-        employee={targetStatusEmployee}
+        department={targetStatusDepartment}
         isSubmitting={statusSubmitting}
         error={statusError}
+      />
+
+      {/* 6. Assign Manager Modal */}
+      <DepartmentManagerModal
+        isOpen={managerModalOpen}
+        onClose={() => setManagerModalOpen(false)}
+        onConfirm={handleManagerConfirm}
+        department={targetManagerDepartment}
+        isSubmitting={managerSubmitting}
+        error={managerError}
       />
     </div>
   );
 };
 
-export default EmployeesPage;
+export default DepartmentsPage;

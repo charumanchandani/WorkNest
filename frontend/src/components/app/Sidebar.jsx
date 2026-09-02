@@ -94,6 +94,7 @@ export const Sidebar = ({ isOpen, onClose, onShowModuleNotice }) => {
   };
 
   const isEmployeesActive = location.pathname.startsWith('/app/employees');
+  const isDepartmentsActive = location.pathname.startsWith('/app/departments');
 
   const sidebarContent = (
     <div className="flex flex-col h-full bg-card border-r border-border text-card-foreground">
@@ -219,21 +220,27 @@ export const Sidebar = ({ isOpen, onClose, onShowModuleNotice }) => {
               </div>
             </Link>
 
-            {isAdmin && (
-              <button
-                type="button"
-                onClick={() => onShowModuleNotice && onShowModuleNotice('Departments', 'Phase 6')}
-                className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/70 transition-colors"
-              >
-                <div className="flex items-center gap-2.5">
-                  <Building2 className="w-4 h-4 text-muted-foreground" />
-                  <span>Departments</span>
-                </div>
-                <span className="text-[10px] text-muted-foreground/80 bg-secondary/80 px-1.5 py-0.5 rounded font-mono">
-                  Phase 6
-                </span>
-              </button>
-            )}
+            {/* Live Departments & Org Route */}
+            <Link
+              to="/app/departments"
+              onClick={onClose}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                isDepartmentsActive
+                  ? 'bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 font-semibold border border-teal-200/60 dark:border-teal-800/60'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-secondary/70'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Building2
+                  className={`w-4 h-4 transition-colors ${
+                    isDepartmentsActive
+                      ? 'text-teal-600 dark:text-teal-400'
+                      : 'text-muted-foreground group-hover:text-foreground'
+                  }`}
+                />
+                <span>Departments</span>
+              </div>
+            </Link>
           </div>
         )}
 

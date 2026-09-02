@@ -1,6 +1,15 @@
 import React from 'react';
 import { useLocation } from 'react-router-dom';
-import { Menu, Sun, Moon, CalendarDays, Users, LayoutDashboard, UserCheck } from 'lucide-react';
+import {
+  Menu,
+  Sun,
+  Moon,
+  CalendarDays,
+  Users,
+  LayoutDashboard,
+  UserCheck,
+  Building2,
+} from 'lucide-react';
 import { useTheme } from '../../hooks';
 import { Button } from '../ui';
 import UserMenu from './UserMenu';
@@ -10,7 +19,7 @@ export const Topbar = ({ onOpenMobileMenu, onShowModuleNotice }) => {
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
 
-  // Determine dynamic page title
+  // Determine dynamic page title & icon
   let pageTitle = 'Employee Dashboard';
   let TitleIcon = LayoutDashboard;
 
@@ -20,6 +29,12 @@ export const Topbar = ({ onOpenMobileMenu, onShowModuleNotice }) => {
   } else if (location.pathname.startsWith('/app/employees/')) {
     pageTitle = 'Employee Profile';
     TitleIcon = UserCheck;
+  } else if (location.pathname === '/app/departments') {
+    pageTitle = 'Departments & Teams';
+    TitleIcon = Building2;
+  } else if (location.pathname.startsWith('/app/departments/')) {
+    pageTitle = 'Department Details';
+    TitleIcon = Building2;
   }
 
   // Current formatted date string

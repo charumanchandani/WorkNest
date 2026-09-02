@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import User from '../models/User.js';
+import Department from '../models/Department.js';
 
 // Helper to escape regex special characters
 const escapeRegex = (string) => {
@@ -10,7 +11,14 @@ export const employeeService = {
   /**
    * Retrieve paginated and filtered list of employees
    */
-  async getEmployees({ page = 1, limit = 10, search = '', role = '', status = '' }) {
+  async getEmployees({
+    page = 1,
+    limit = 10,
+    search = '',
+    role = '',
+    status = '',
+    department = '',
+  } = {}) {
     const pageNum = Math.max(1, parseInt(page, 10) || 1);
     const limitNum = Math.min(50, Math.max(1, parseInt(limit, 10) || 10));
     const skip = (pageNum - 1) * limitNum;
@@ -27,7 +35,14 @@ export const employeeService = {
       query.status = status.toUpperCase();
     }
 
-    // 3. Search Query (Name, Email, EmployeeId, JobTitle)
+    // 3. Department Filter
+    if (department && department !== 'ALL') {
+      if (mongoose.Types.ObjectId.isValid(department)) {
+        query.department = department;
+      }
+    }
+
+    // 4. Search Query (Name, Email, EmployeeId, JobTitle)
     if (search && search.trim()) {
       const sanitized = escapeRegex(search.trim());
       const searchRegex = new RegExp(sanitized, 'i');
@@ -41,6 +56,7 @@ export const employeeService = {
 
     const [employees, total] = await Promise.all([
       User.find(query)
+        .populate('department', 'name code status')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limitNum),
@@ -70,7 +86,7 @@ export const employeeService = {
       throw error;
     }
 
-    const user = await User.findById(id);
+    const user = await User.findById(id).populate('department', 'name code status');
     if (!user) {
       const error = new Error('Employee not found.');
       error.statusCode = 404;
@@ -94,7 +110,7 @@ export const employeeService = {
       phone = '',
       joiningDate,
       location = 'Remote',
-      department = '',
+      department = null,
       employeeId,
       initialPassword,
     } = data;
@@ -126,6 +142,31 @@ export const employeeService = {
       }
     }
 
+    // Validate Department if assigned
+    let departmentId = null;
+    if (department && department !== 'NONE') {
+      if (!mongoose.Types.ObjectId.isValid(department)) {
+        const error = new Error('Invalid department ID format.');
+        error.statusCode = 400;
+        throw error;
+      }
+
+      const dept = await Department.findById(department);
+      if (!dept) {
+        const error = new Error('Selected department does not exist.');
+        error.statusCode = 400;
+        throw error;
+      }
+
+      if (dept.status !== 'ACTIVE') {
+        const error = new Error('Cannot assign employee to an inactive department.');
+        error.statusCode = 400;
+        throw error;
+      }
+
+      departmentId = dept._id;
+    }
+
     // Secure temporary initial password
     const tempPassword = initialPassword || 'Welcome@WN2026';
 
@@ -140,13 +181,14 @@ export const employeeService = {
       phone: phone?.trim() || '',
       joiningDate: joiningDate ? new Date(joiningDate) : new Date(),
       location: location?.trim() || 'Remote',
-      department: department?.trim() || '',
+      department: departmentId,
       employeeId: employeeId ? employeeId.trim().toUpperCase() : undefined,
       status: 'ACTIVE',
       isActive: true,
     });
 
     await newUser.save();
+    await newUser.populate('department', 'name code status');
 
     return {
       employee: newUser.toSafeObject(),
@@ -202,7 +244,52 @@ export const employeeService = {
       }
     }
 
+    // If role is being changed to EMPLOYEE, check if user is manager of any department
+    if (
+      updateData.role === 'EMPLOYEE' &&
+      user.role !== 'EMPLOYEE'
+    ) {
+      const managedDept = await Department.findOne({ manager: user._id });
+      if (managedDept) {
+        const error = new Error(
+          `Cannot change role to EMPLOYEE because this user is currently assigned as manager of the '${managedDept.name}' department. Please reassign the department manager first.`
+        );
+        error.statusCode = 400;
+        throw error;
+      }
+    }
+
+    // Validate Department if updating department
+    if (updateData.department !== undefined) {
+      if (!updateData.department || updateData.department === 'NONE') {
+        user.department = null;
+      } else {
+        if (!mongoose.Types.ObjectId.isValid(updateData.department)) {
+          const error = new Error('Invalid department ID format.');
+          error.statusCode = 400;
+          throw error;
+        }
+
+        const dept = await Department.findById(updateData.department);
+        if (!dept) {
+          const error = new Error('Selected department does not exist.');
+          error.statusCode = 400;
+          throw error;
+        }
+
+        if (dept.status !== 'ACTIVE') {
+          const error = new Error('Cannot assign employee to an inactive department.');
+          error.statusCode = 400;
+          throw error;
+        }
+
+        user.department = dept._id;
+      }
+    }
+
     allowedFields.forEach((field) => {
+      if (field === 'department') return; // Handled explicitly above
+
       if (updateData[field] !== undefined) {
         if (field === 'joiningDate') {
           user[field] = new Date(updateData[field]);
@@ -217,6 +304,7 @@ export const employeeService = {
     });
 
     await user.save();
+    await user.populate('department', 'name code status');
     return user.toSafeObject();
   },
 
@@ -262,6 +350,7 @@ export const employeeService = {
     user.status = normalizedStatus;
     user.isActive = normalizedStatus === 'ACTIVE';
     await user.save();
+    await user.populate('department', 'name code status');
 
     return user.toSafeObject();
   },

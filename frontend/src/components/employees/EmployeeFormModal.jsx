@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { User, Mail, Phone, Briefcase, MapPin, Calendar, Shield, Hash } from 'lucide-react';
+import { User, Mail, Phone, Briefcase, MapPin, Calendar, Hash, Building2 } from 'lucide-react';
 import { Modal, Button, Input, Select, Alert } from '../ui';
+import departmentService from '../../services/departmentService';
 
 export const EmployeeFormModal = ({
   isOpen,
@@ -19,12 +20,39 @@ export const EmployeeFormModal = ({
     phone: '',
     role: 'EMPLOYEE',
     jobTitle: '',
+    department: 'NONE',
     joiningDate: new Date().toISOString().split('T')[0],
     location: 'Remote',
     employeeId: '',
   });
 
+  const [departments, setDepartments] = useState([]);
+  const [loadingDepts, setLoadingDepts] = useState(false);
   const [validationError, setValidationError] = useState('');
+
+  // Fetch active departments on open
+  useEffect(() => {
+    if (isOpen) {
+      const fetchDepts = async () => {
+        try {
+          setLoadingDepts(true);
+          const res = await departmentService.getDepartments({
+            limit: 50,
+            status: 'ACTIVE',
+          });
+          if (res?.data?.departments) {
+            setDepartments(res.data.departments);
+          }
+        } catch {
+          // Non-blocking
+        } finally {
+          setLoadingDepts(false);
+        }
+      };
+
+      fetchDepts();
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (initialData) {
@@ -35,6 +63,7 @@ export const EmployeeFormModal = ({
         phone: initialData.phone || '',
         role: initialData.role || 'EMPLOYEE',
         jobTitle: initialData.jobTitle || '',
+        department: initialData.department?.id || (initialData.department ? (typeof initialData.department === 'string' ? initialData.department : initialData.department.id) : 'NONE') || 'NONE',
         joiningDate: initialData.joiningDate
           ? new Date(initialData.joiningDate).toISOString().split('T')[0]
           : new Date().toISOString().split('T')[0],
@@ -49,6 +78,7 @@ export const EmployeeFormModal = ({
         phone: '',
         role: 'EMPLOYEE',
         jobTitle: 'Associate',
+        department: 'NONE',
         joiningDate: new Date().toISOString().split('T')[0],
         location: 'Remote',
         employeeId: '',
@@ -83,6 +113,7 @@ export const EmployeeFormModal = ({
 
     onSubmit({
       ...formData,
+      department: formData.department === 'NONE' ? null : formData.department,
       name: `${formData.firstName.trim()} ${formData.lastName.trim()}`.trim(),
     });
   };
@@ -93,6 +124,14 @@ export const EmployeeFormModal = ({
     { value: 'ADMIN', label: 'Administrator (Full Access)' },
   ];
 
+  const departmentOptions = [
+    { value: 'NONE', label: '— No Department (Unassigned) —' },
+    ...departments.map((d) => ({
+      value: d.id,
+      label: `${d.name} (${d.code})`,
+    })),
+  ];
+
   return (
     <Modal
       isOpen={isOpen}
@@ -100,7 +139,7 @@ export const EmployeeFormModal = ({
       title={isEditing ? `Edit Employee: ${initialData?.name}` : 'Add New Employee'}
       description={
         isEditing
-          ? 'Update employee profile details, role, and job information.'
+          ? 'Update employee profile details, role, department, and job information.'
           : 'Enroll a new team member and provision their WorkNest workspace account.'
       }
       size="lg"
@@ -167,7 +206,7 @@ export const EmployeeFormModal = ({
           />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
           <div className="space-y-1">
             <label htmlFor="role" className="block text-xs font-semibold text-foreground">
               Assigned Role
@@ -178,6 +217,20 @@ export const EmployeeFormModal = ({
               options={roleOptions}
               value={formData.role}
               onChange={handleChange}
+            />
+          </div>
+
+          <div className="space-y-1">
+            <label htmlFor="department" className="block text-xs font-semibold text-foreground">
+              Department
+            </label>
+            <Select
+              id="department"
+              name="department"
+              options={departmentOptions}
+              value={formData.department}
+              onChange={handleChange}
+              disabled={loadingDepts}
             />
           </div>
 

@@ -7,6 +7,8 @@ import {
   EmployeeDashboard,
   EmployeesPage,
   EmployeeDetailPage,
+  DepartmentsPage,
+  DepartmentDetailPage,
 } from '../pages';
 import { AppLayout } from '../layouts';
 import ProtectedRoute from './ProtectedRoute';
@@ -61,6 +63,24 @@ export const AppRoutes = () => {
           element={
             <ProtectedRoute allowedRoles={['ADMIN', 'MANAGER']}>
               <EmployeeDetailPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Phase 6 Departments & Organization Structure (Admin & Manager) */}
+        <Route
+          path="departments"
+          element={
+            <ProtectedRoute allowedRoles={['ADMIN', 'MANAGER']}>
+              <DepartmentsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="departments/:id"
+          element={
+            <ProtectedRoute allowedRoles={['ADMIN', 'MANAGER']}>
+              <DepartmentDetailPage />
             </ProtectedRoute>
           }
         />
