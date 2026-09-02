@@ -37,13 +37,13 @@ WorkNest follows a decoupled client-server architecture with clear separation of
 WorkNest/
 ├── frontend/                # Client application (React + Vite + Tailwind CSS)
 │   ├── src/
-│   │   ├── components/      # UI components (Button, Input, Card, Modal, etc.) & Landing sections
-│   │   ├── layouts/         # Layout wrappers
-│   │   ├── pages/           # LandingPage, LoginPage, RegisterPage, AppPlaceholderPage
+│   │   ├── components/      # UI components, Landing sections, App Shell & Employees
+│   │   ├── layouts/         # AppLayout (Sidebar, Topbar, Content Outlet)
+│   │   ├── pages/           # LandingPage, LoginPage, RegisterPage, EmployeeDashboard, EmployeesPage, EmployeeDetailPage
 │   │   ├── routes/          # AppRoutes, ProtectedRoute, PublicOnlyRoute
 │   │   ├── context/         # AuthContext, ThemeContext
 │   │   ├── hooks/           # useAuth, useTheme
-│   │   ├── services/        # apiClient, authService
+│   │   ├── services/        # apiClient, authService, employeeService
 │   │   ├── utils/           # Helper functions & formatting utilities
 │   │   ├── constants/       # App constants and configuration tokens
 │   │   └── assets/          # Static assets and icons
@@ -52,12 +52,12 @@ WorkNest/
 ├── backend/                 # API server (Node.js + Express + MongoDB)
 │   ├── src/
 │   │   ├── config/          # Database connection & environment configuration
-│   │   ├── controllers/     # authController, healthController
+│   │   ├── controllers/     # authController, employeeController, healthController
 │   │   ├── middleware/      # authMiddleware (protect), roleMiddleware (authorizeRoles), errorHandler
-│   │   ├── models/          # User (Mongoose schema with bcrypt hashing)
-│   │   ├── routes/          # authRoutes, healthRoutes
+│   │   ├── models/          # User (Mongoose schema with employee profile fields)
+│   │   ├── routes/          # authRoutes, employeeRoutes, healthRoutes
 │   │   ├── scripts/         # seedUsers.js (development test accounts)
-│   │   ├── services/        # Business logic layer
+│   │   ├── services/        # employeeService
 │   │   └── utils/           # token, responseHandler
 │   ├── server.js            # Server entrypoint & Express bootstrapping
 │   └── package.json
@@ -72,17 +72,17 @@ WorkNest/
 
 WorkNest enforces role authorization on both backend endpoints and frontend route guards:
 
-| Role | Description | Enrollment |
+| Role | Description | Enrollment / Access |
 | :--- | :--- | :--- |
 | **`EMPLOYEE`** | Self-service access for personal attendance, time-off requests, assigned tasks, and company resources. | Default for public registration |
-| **`MANAGER`** | Department-level access for team availability monitoring, leave approval queues, and task delegation. | Organization-assigned / Seeded |
-| **`ADMIN`** | Enterprise-level access for organization management, employee provisioning, global policies, and reports. | Organization-assigned / Seeded |
+| **`MANAGER`** | Department-level access for team availability monitoring, leave approval queues, and viewing the employee directory. | Organization-assigned / Seeded |
+| **`ADMIN`** | Enterprise-level access for full employee provisioning, role assignment, status toggling, and global workplace policies. | Organization-assigned / Seeded |
 
 ---
 
-## Authentication API Endpoints
+## API Endpoints
 
-All authentication endpoints are located under `/api/auth`:
+### 1. Authentication (`/api/auth`)
 
 | Method | Endpoint | Access | Description |
 | :--- | :--- | :--- | :--- |
@@ -90,6 +90,16 @@ All authentication endpoints are located under `/api/auth`:
 | `POST` | `/api/auth/login` | Public | Verifies credentials and sets HttpOnly JWT cookie |
 | `GET` | `/api/auth/me` | Private | Returns safe current authenticated user profile (`id`, `name`, `email`, `role`) |
 | `POST` | `/api/auth/logout` | Private/Public | Invalidate session and clears `worknest_token` cookie |
+
+### 2. Employee Management (`/api/employees`)
+
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/employees` | Admin, Manager | List employees with server-side pagination, search, and role/status filters |
+| `GET` | `/api/employees/:id` | Admin, Manager | Retrieve full profile details of a single employee |
+| `POST` | `/api/employees` | Admin | Create and provision a new employee account |
+| `PATCH` | `/api/employees/:id` | Admin | Update employee profile information |
+| `PATCH` | `/api/employees/:id/status` | Admin | Activate or deactivate employee account (with last active admin protection) |
 
 ---
 
@@ -131,9 +141,9 @@ By default, the backend API will run on `http://localhost:5000`.
 npm run seed
 ```
 Creates default development accounts:
-- **Employee**: `employee@worknest.io` / `Password123!`
-- **Manager**: `manager@worknest.io` / `Password123!`
 - **Admin**: `admin@worknest.io` / `Password123!`
+- **Manager**: `manager@worknest.io` / `Password123!`
+- **Employee**: `employee@worknest.io` / `Password123!`
 
 #### 3. Frontend Setup
 ```bash

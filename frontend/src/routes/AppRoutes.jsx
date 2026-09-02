@@ -1,6 +1,13 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { LandingPage, LoginPage, RegisterPage, EmployeeDashboard } from '../pages';
+import {
+  LandingPage,
+  LoginPage,
+  RegisterPage,
+  EmployeeDashboard,
+  EmployeesPage,
+  EmployeeDetailPage,
+} from '../pages';
 import { AppLayout } from '../layouts';
 import ProtectedRoute from './ProtectedRoute';
 import PublicOnlyRoute from './PublicOnlyRoute';
@@ -39,6 +46,24 @@ export const AppRoutes = () => {
         }
       >
         <Route index element={<EmployeeDashboard />} />
+
+        {/* Phase 5 Employee Management (Admin & Manager) */}
+        <Route
+          path="employees"
+          element={
+            <ProtectedRoute allowedRoles={['ADMIN', 'MANAGER']}>
+              <EmployeesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="employees/:id"
+          element={
+            <ProtectedRoute allowedRoles={['ADMIN', 'MANAGER']}>
+              <EmployeeDetailPage />
+            </ProtectedRoute>
+          }
+        />
       </Route>
 
       {/* Catch-all fallback */}

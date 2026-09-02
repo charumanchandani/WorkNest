@@ -14,7 +14,6 @@ import {
   X,
   Users,
   Building2,
-  Shield,
 } from 'lucide-react';
 import { useAuth } from '../../hooks';
 import { Badge } from '../ui';
@@ -94,6 +93,8 @@ export const Sidebar = ({ isOpen, onClose, onShowModuleNotice }) => {
     }
   };
 
+  const isEmployeesActive = location.pathname.startsWith('/app/employees');
+
   const sidebarContent = (
     <div className="flex flex-col h-full bg-card border-r border-border text-card-foreground">
       {/* Brand Header */}
@@ -141,25 +142,41 @@ export const Sidebar = ({ isOpen, onClose, onShowModuleNotice }) => {
             const Icon = item.icon;
             const isActive = item.active;
 
+            if (item.path) {
+              return (
+                <Link
+                  key={item.name}
+                  to={item.path}
+                  onClick={onClose}
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                    isActive
+                      ? 'bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 font-semibold border border-teal-200/60 dark:border-teal-800/60'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-secondary/70'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Icon
+                      className={`w-4 h-4 transition-colors ${
+                        isActive
+                          ? 'text-teal-600 dark:text-teal-400'
+                          : 'text-muted-foreground group-hover:text-foreground'
+                      }`}
+                    />
+                    <span>{item.name}</span>
+                  </div>
+                </Link>
+              );
+            }
+
             return (
               <button
                 key={item.name}
                 type="button"
                 onClick={() => handleItemClick(item)}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                  isActive
-                    ? 'bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 font-semibold border border-teal-200/60 dark:border-teal-800/60'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-secondary/70'
-                }`}
+                className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors cursor-pointer group text-muted-foreground hover:text-foreground hover:bg-secondary/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <div className="flex items-center gap-2.5">
-                  <Icon
-                    className={`w-4 h-4 transition-colors ${
-                      isActive
-                        ? 'text-teal-600 dark:text-teal-400'
-                        : 'text-muted-foreground group-hover:text-foreground'
-                    }`}
-                  />
+                  <Icon className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
                   <span>{item.name}</span>
                 </div>
 
@@ -173,26 +190,34 @@ export const Sidebar = ({ isOpen, onClose, onShowModuleNotice }) => {
           })}
         </div>
 
-        {/* Role-aware future management section */}
+        {/* Role-aware management section (Admin & Manager) */}
         {isManagerOrAdmin && (
           <div className="space-y-1 pt-2 border-t border-border">
             <span className="px-3 text-[10px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
               {isAdmin ? 'Organization Admin' : 'Team Management'}
             </span>
 
-            <button
-              type="button"
-              onClick={() => onShowModuleNotice && onShowModuleNotice('Employee Directory', 'Phase 5')}
-              className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/70 transition-colors"
+            {/* Live Employee Directory Route */}
+            <Link
+              to="/app/employees"
+              onClick={onClose}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                isEmployeesActive
+                  ? 'bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 font-semibold border border-teal-200/60 dark:border-teal-800/60'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-secondary/70'
+              }`}
             >
               <div className="flex items-center gap-2.5">
-                <Users className="w-4 h-4 text-muted-foreground" />
-                <span>Employee Directory</span>
+                <Users
+                  className={`w-4 h-4 transition-colors ${
+                    isEmployeesActive
+                      ? 'text-teal-600 dark:text-teal-400'
+                      : 'text-muted-foreground group-hover:text-foreground'
+                  }`}
+                />
+                <span>Employees</span>
               </div>
-              <span className="text-[10px] text-muted-foreground/80 bg-secondary/80 px-1.5 py-0.5 rounded font-mono">
-                Phase 5
-              </span>
-            </button>
+            </Link>
 
             {isAdmin && (
               <button

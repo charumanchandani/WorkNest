@@ -1,5 +1,6 @@
 import React from 'react';
-import { Menu, Sun, Moon, CalendarDays } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
+import { Menu, Sun, Moon, CalendarDays, Users, LayoutDashboard, UserCheck } from 'lucide-react';
 import { useTheme } from '../../hooks';
 import { Button } from '../ui';
 import UserMenu from './UserMenu';
@@ -7,6 +8,19 @@ import NotificationPopover from './NotificationPopover';
 
 export const Topbar = ({ onOpenMobileMenu, onShowModuleNotice }) => {
   const { theme, toggleTheme } = useTheme();
+  const location = useLocation();
+
+  // Determine dynamic page title
+  let pageTitle = 'Employee Dashboard';
+  let TitleIcon = LayoutDashboard;
+
+  if (location.pathname === '/app/employees') {
+    pageTitle = 'Employee Directory';
+    TitleIcon = Users;
+  } else if (location.pathname.startsWith('/app/employees/')) {
+    pageTitle = 'Employee Profile';
+    TitleIcon = UserCheck;
+  }
 
   // Current formatted date string
   const todayFormatted = new Intl.DateTimeFormat('en-US', {
@@ -32,10 +46,13 @@ export const Topbar = ({ onOpenMobileMenu, onShowModuleNotice }) => {
           </button>
 
           <div>
-            <h1 className="text-sm sm:text-base font-bold text-foreground leading-tight">
-              Employee Dashboard
-            </h1>
-            <div className="hidden sm:flex items-center gap-1.5 text-[11px] text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <TitleIcon className="w-4 h-4 text-teal-600 dark:text-teal-400 hidden sm:inline shrink-0" />
+              <h1 className="text-sm sm:text-base font-bold text-foreground leading-tight">
+                {pageTitle}
+              </h1>
+            </div>
+            <div className="hidden sm:flex items-center gap-1.5 text-[11px] text-muted-foreground mt-0.5">
               <CalendarDays className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
               <span>{todayFormatted}</span>
               <span className="opacity-50">&bull;</span>
