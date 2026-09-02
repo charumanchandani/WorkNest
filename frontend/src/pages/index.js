@@ -1,4 +1,4 @@
 export { LandingPage } from './LandingPage';
 export { LoginPage } from './LoginPage';
 export { RegisterPage } from './RegisterPage';
-export { AppPlaceholderPage } from './AppPlaceholderPage';
+export { EmployeeDashboard } from './EmployeeDashboard';

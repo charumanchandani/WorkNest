@@ -1,6 +1,7 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { LandingPage, LoginPage, RegisterPage, AppPlaceholderPage } from '../pages';
+import { LandingPage, LoginPage, RegisterPage, EmployeeDashboard } from '../pages';
+import { AppLayout } from '../layouts';
 import ProtectedRoute from './ProtectedRoute';
 import PublicOnlyRoute from './PublicOnlyRoute';
 
@@ -28,15 +29,17 @@ export const AppRoutes = () => {
         }
       />
 
-      {/* Authenticated Verification Route */}
+      {/* Authenticated Workspace Application Shell */}
       <Route
         path="/app"
         element={
           <ProtectedRoute>
-            <AppPlaceholderPage />
+            <AppLayout />
           </ProtectedRoute>
         }
-      />
+      >
+        <Route index element={<EmployeeDashboard />} />
+      </Route>
 
       {/* Catch-all fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
