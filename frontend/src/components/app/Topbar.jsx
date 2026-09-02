@@ -9,6 +9,8 @@ import {
   LayoutDashboard,
   UserCheck,
   Building2,
+  Clock,
+  CalendarCheck2,
 } from 'lucide-react';
 import { useTheme } from '../../hooks';
 import { Button } from '../ui';
@@ -23,7 +25,13 @@ export const Topbar = ({ onOpenMobileMenu, onShowModuleNotice }) => {
   let pageTitle = 'Employee Dashboard';
   let TitleIcon = LayoutDashboard;
 
-  if (location.pathname === '/app/employees') {
+  if (location.pathname === '/app/attendance') {
+    pageTitle = 'My Attendance';
+    TitleIcon = Clock;
+  } else if (location.pathname === '/app/attendance/manage') {
+    pageTitle = 'Attendance Monitoring';
+    TitleIcon = CalendarCheck2;
+  } else if (location.pathname === '/app/employees') {
     pageTitle = 'Employee Directory';
     TitleIcon = Users;
   } else if (location.pathname.startsWith('/app/employees/')) {

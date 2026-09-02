@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { Sparkles, Shield, User, Clock } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import { useAuth } from '../hooks';
 import { Badge } from '../components/ui';
 import {
@@ -12,11 +12,37 @@ import {
   ActivityFeed,
 } from '../components/app';
 import { dashboardMockData } from '../constants/dashboardData';
+import attendanceService from '../services/attendanceService';
 
 export const EmployeeDashboard = () => {
   const { user } = useAuth();
   const outletContext = useOutletContext();
   const onShowModuleNotice = outletContext?.onShowModuleNotice;
+
+  // Real attendance state
+  const [todayAttendance, setTodayAttendance] = useState(null);
+  const [attendanceLoading, setAttendanceLoading] = useState(true);
+  const [attendanceError, setAttendanceError] = useState('');
+
+  useEffect(() => {
+    const fetchTodayAttendance = async () => {
+      try {
+        setAttendanceLoading(true);
+        setAttendanceError('');
+        const res = await attendanceService.getTodayAttendance();
+        if (res?.data?.attendance) {
+          setTodayAttendance(res.data.attendance);
+        }
+      } catch (err) {
+        // Non-blocking error handling for dashboard
+        setAttendanceError(err.formattedMessage || 'Failed to load today’s attendance.');
+      } finally {
+        setAttendanceLoading(false);
+      }
+    };
+
+    fetchTodayAttendance();
+  }, []);
 
   // Extract first name
   const firstName = user?.name ? user.name.split(' ')[0] : 'Colleague';
@@ -58,7 +84,7 @@ export const EmployeeDashboard = () => {
         <div className="flex items-center gap-2">
           <div className="px-3 py-1.5 rounded-lg bg-teal-50 dark:bg-teal-950/50 border border-teal-200/70 dark:border-teal-800/70 flex items-center gap-2 text-xs text-teal-800 dark:text-teal-300">
             <Sparkles className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />
-            <span className="font-medium">Phase 4 Active</span>
+            <span className="font-medium">Phase 7 Live</span>
           </div>
         </div>
       </div>
@@ -82,10 +108,11 @@ export const EmployeeDashboard = () => {
             onTasksClick={onShowModuleNotice}
           />
 
-          {/* Weekly Attendance Widget */}
+          {/* Real Workday Attendance Widget */}
           <AttendanceWidget
-            weeklyData={dashboardMockData.weeklyAttendance}
-            onDetailsClick={onShowModuleNotice}
+            todayAttendance={todayAttendance}
+            loading={attendanceLoading}
+            error={attendanceError}
           />
         </div>
 
