@@ -15,6 +15,7 @@ import {
   Users,
   Building2,
   CalendarCheck2,
+  FileCheck2,
 } from 'lucide-react';
 import { useAuth } from '../../hooks';
 import { Badge } from '../ui';
@@ -40,9 +41,10 @@ export const Sidebar = ({ isOpen, onClose, onShowModuleNotice }) => {
     },
     {
       name: 'My Leave',
-      path: null,
+      path: '/app/leave',
       icon: Calendar,
-      phase: 'Phase 8',
+      active: location.pathname === '/app/leave',
+      phase: null,
     },
     {
       name: 'My Tasks',
@@ -98,6 +100,7 @@ export const Sidebar = ({ isOpen, onClose, onShowModuleNotice }) => {
   const isEmployeesActive = location.pathname.startsWith('/app/employees');
   const isDepartmentsActive = location.pathname.startsWith('/app/departments');
   const isAttendanceManageActive = location.pathname === '/app/attendance/manage';
+  const isLeaveManageActive = location.pathname === '/app/leave/manage';
 
   const sidebarContent = (
     <div className="flex flex-col h-full bg-card border-r border-border text-card-foreground">
@@ -200,6 +203,28 @@ export const Sidebar = ({ isOpen, onClose, onShowModuleNotice }) => {
             <span className="px-3 text-[10px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
               {isAdmin ? 'Organization Admin' : 'Team Management'}
             </span>
+
+            {/* Leave Management Route */}
+            <Link
+              to="/app/leave/manage"
+              onClick={onClose}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                isLeaveManageActive
+                  ? 'bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 font-semibold border border-teal-200/60 dark:border-teal-800/60'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-secondary/70'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <FileCheck2
+                  className={`w-4 h-4 transition-colors ${
+                    isLeaveManageActive
+                      ? 'text-teal-600 dark:text-teal-400'
+                      : 'text-muted-foreground group-hover:text-foreground'
+                  }`}
+                />
+                <span>Leave Approvals</span>
+              </div>
+            </Link>
 
             {/* Attendance Monitoring Route */}
             <Link

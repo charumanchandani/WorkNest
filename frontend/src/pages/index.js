@@ -8,3 +8,5 @@ export { DepartmentsPage } from './DepartmentsPage';
 export { DepartmentDetailPage } from './DepartmentDetailPage';
 export { AttendancePage } from './AttendancePage';
 export { AttendanceManagePage } from './AttendanceManagePage';
+export { LeavePage } from './LeavePage';
+export { LeaveManagePage } from './LeaveManagePage';

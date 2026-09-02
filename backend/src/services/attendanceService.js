@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import Attendance from '../models/Attendance.js';
+import Leave from '../models/Leave.js';
 import User from '../models/User.js';
 import Department from '../models/Department.js';
 import {
@@ -8,6 +9,7 @@ import {
   ATTENDANCE_STATUS,
   ATTENDANCE_STATUS_LIST,
 } from '../constants/attendance.js';
+import { LEAVE_STATUS } from '../constants/leave.js';
 
 // Helper to escape regex special characters
 const escapeRegex = (string) => {
@@ -33,6 +35,23 @@ export const attendanceService = {
     }
 
     const today = getTodayDateString();
+
+    // Check if employee has approved leave covering today
+    const activeLeave = await Leave.findOne({
+      employee: user._id,
+      status: LEAVE_STATUS.APPROVED,
+      startDate: { $lte: today },
+      endDate: { $gte: today },
+    });
+
+    if (activeLeave) {
+      const error = new Error(
+        `Cannot check in: You have an approved ${activeLeave.leaveType.toLowerCase()} leave scheduled for today (${activeLeave.startDate} to ${activeLeave.endDate}).`
+      );
+      error.statusCode = 400;
+      throw error;
+    }
+
     let record = await Attendance.findOne({ employee: user._id, date: today });
 
     if (record && record.checkIn) {
@@ -137,6 +156,31 @@ export const attendanceService = {
       return record.toSafeObject();
     }
 
+    // Check if employee is on approved leave today
+    const activeLeave = await Leave.findOne({
+      employee: userId,
+      status: LEAVE_STATUS.APPROVED,
+      startDate: { $lte: today },
+      endDate: { $gte: today },
+    });
+
+    if (activeLeave) {
+      return {
+        id: null,
+        employee: { id: userId.toString() },
+        date: today,
+        checkIn: null,
+        checkOut: null,
+        status: ATTENDANCE_STATUS.ON_LEAVE,
+        totalMinutes: 0,
+        isCheckedIn: false,
+        isCheckedOut: false,
+        isOnLeave: true,
+        leaveType: activeLeave.leaveType,
+        notes: `On approved ${activeLeave.leaveType.toLowerCase()} leave`,
+      };
+    }
+
     return {
       id: null,
       employee: { id: userId.toString() },
@@ -147,6 +191,7 @@ export const attendanceService = {
       totalMinutes: 0,
       isCheckedIn: false,
       isCheckedOut: false,
+      isOnLeave: false,
       notes: '',
     };
   },

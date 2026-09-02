@@ -4,6 +4,7 @@ import authRoutes from './authRoutes.js';
 import employeeRoutes from './employeeRoutes.js';
 import departmentRoutes from './departmentRoutes.js';
 import attendanceRoutes from './attendanceRoutes.js';
+import leaveRoutes from './leaveRoutes.js';
 
 const router = Router();
 
@@ -13,5 +14,6 @@ router.use('/auth', authRoutes);
 router.use('/employees', employeeRoutes);
 router.use('/departments', departmentRoutes);
 router.use('/attendance', attendanceRoutes);
+router.use('/leaves', leaveRoutes);
 
 export default router;

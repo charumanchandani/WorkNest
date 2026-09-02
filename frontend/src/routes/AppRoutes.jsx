@@ -11,6 +11,8 @@ import {
   DepartmentDetailPage,
   AttendancePage,
   AttendanceManagePage,
+  LeavePage,
+  LeaveManagePage,
 } from '../pages';
 import { AppLayout } from '../layouts';
 import ProtectedRoute from './ProtectedRoute';
@@ -50,6 +52,17 @@ export const AppRoutes = () => {
         }
       >
         <Route index element={<EmployeeDashboard />} />
+
+        {/* Phase 8 Leave Management */}
+        <Route path="leave" element={<LeavePage />} />
+        <Route
+          path="leave/manage"
+          element={
+            <ProtectedRoute allowedRoles={['ADMIN', 'MANAGER']}>
+              <LeaveManagePage />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Phase 7 Attendance Management */}
         <Route path="attendance" element={<AttendancePage />} />

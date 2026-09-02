@@ -13,6 +13,7 @@ import {
 } from '../components/app';
 import { dashboardMockData } from '../constants/dashboardData';
 import attendanceService from '../services/attendanceService';
+import leaveService from '../services/leaveService';
 
 export const EmployeeDashboard = () => {
   const { user } = useAuth();
@@ -21,13 +22,15 @@ export const EmployeeDashboard = () => {
 
   // Real attendance state
   const [todayAttendance, setTodayAttendance] = useState(null);
-  const [attendanceLoading, setAttendanceLoading] = useState(true);
   const [attendanceError, setAttendanceError] = useState('');
+
+  // Real leave balance state
+  const [leaveBalance, setLeaveBalance] = useState(null);
+  const [leaveError, setLeaveError] = useState('');
 
   useEffect(() => {
     const fetchTodayAttendance = async () => {
       try {
-        setAttendanceLoading(true);
         setAttendanceError('');
         const res = await attendanceService.getTodayAttendance();
         if (res?.data?.attendance) {
@@ -36,12 +39,23 @@ export const EmployeeDashboard = () => {
       } catch (err) {
         // Non-blocking error handling for dashboard
         setAttendanceError(err.formattedMessage || 'Failed to load today’s attendance.');
-      } finally {
-        setAttendanceLoading(false);
+      }
+    };
+
+    const fetchLeaveBalance = async () => {
+      try {
+        setLeaveError('');
+        const res = await leaveService.getMyBalance();
+        if (res?.data?.balance) {
+          setLeaveBalance(res.data.balance);
+        }
+      } catch (err) {
+        setLeaveError(err.formattedMessage || 'Failed to load leave balance.');
       }
     };
 
     fetchTodayAttendance();
+    fetchLeaveBalance();
   }, []);
 
   // Extract first name
@@ -84,7 +98,7 @@ export const EmployeeDashboard = () => {
         <div className="flex items-center gap-2">
           <div className="px-3 py-1.5 rounded-lg bg-teal-50 dark:bg-teal-950/50 border border-teal-200/70 dark:border-teal-800/70 flex items-center gap-2 text-xs text-teal-800 dark:text-teal-300">
             <Sparkles className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />
-            <span className="font-medium">Phase 7 Live</span>
+            <span className="font-medium">Phase 8 Live</span>
           </div>
         </div>
       </div>
@@ -111,18 +125,16 @@ export const EmployeeDashboard = () => {
           {/* Real Workday Attendance Widget */}
           <AttendanceWidget
             todayAttendance={todayAttendance}
-            loading={attendanceLoading}
             error={attendanceError}
           />
         </div>
 
         {/* Right Column (1 col on lg screens): Leave Balance & Activity Feed */}
         <div className="space-y-6">
-          {/* Leave Allowance Breakdown */}
+          {/* Real Leave Allowance Breakdown */}
           <LeaveWidget
-            leaveData={dashboardMockData.leaveBreakdown}
-            pendingCount={dashboardMockData.metrics.leaveBalance.pendingRequests}
-            onRequestClick={onShowModuleNotice}
+            balance={leaveBalance}
+            error={leaveError}
           />
 
           {/* Recent Operational Activity Feed */}
