@@ -3,34 +3,27 @@ import { API_BASE_URL } from '../constants';
 
 /**
  * Centralized Axios client instance for WorkNest.
- * Configured with base URL, standard JSON headers, and extensible interceptors.
+ * Configured with base URL, credentials support for HttpOnly cookies, and interceptors.
  */
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
   timeout: 10000,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Request interceptor for token attachment in future auth phase
-apiClient.interceptors.request.use(
-  (config) => {
-    // Token resolution logic will be integrated in Phase 3
-    const token = localStorage.getItem('worknest_token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
-// Response interceptor for centralized error response handling
+// Response interceptor for centralized error message formatting
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Global error response interceptor
+    // Extract server message or fallback to network error
+    const message =
+      error.response?.data?.message ||
+      error.message ||
+      'An unexpected network error occurred.';
+    error.formattedMessage = message;
     return Promise.reject(error);
   }
 );

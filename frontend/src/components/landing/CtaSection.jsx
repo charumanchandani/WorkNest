@@ -1,8 +1,11 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ArrowRight, ChevronUp, Layers } from 'lucide-react';
-import { Button, Badge } from '../ui';
+import { Button } from '../ui';
 
-export const CtaSection = ({ onOpenAuthPlaceholder }) => {
+export const CtaSection = () => {
+  const navigate = useNavigate();
+
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -35,7 +38,7 @@ export const CtaSection = ({ onOpenAuthPlaceholder }) => {
               variant="primary"
               size="lg"
               rightIcon={ArrowRight}
-              onClick={onOpenAuthPlaceholder}
+              onClick={() => navigate('/register')}
               className="w-full sm:w-auto"
             >
               Get Started

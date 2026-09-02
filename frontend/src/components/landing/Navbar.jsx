@@ -1,10 +1,22 @@
 import React, { useState } from 'react';
-import { Layers, Sun, Moon, Menu, X, ArrowRight } from 'lucide-react';
-import { useTheme } from '../../hooks';
-import { Button } from '../ui';
+import { Link, useNavigate } from 'react-router-dom';
+import {
+  Layers,
+  Sun,
+  Moon,
+  Menu,
+  X,
+  ArrowRight,
+  LogOut,
+  LayoutDashboard,
+} from 'lucide-react';
+import { useTheme, useAuth } from '../../hooks';
+import { Button, Badge } from '../ui';
 
-export const Navbar = ({ onOpenAuthPlaceholder }) => {
+export const Navbar = () => {
   const { theme, toggleTheme } = useTheme();
+  const { user, isAuthenticated, logout } = useAuth();
+  const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navLinks = [
@@ -23,12 +35,23 @@ export const Navbar = ({ onOpenAuthPlaceholder }) => {
     }
   };
 
+  const getRoleBadgeVariant = (role) => {
+    switch (role) {
+      case 'ADMIN':
+        return 'destructive';
+      case 'MANAGER':
+        return 'warning';
+      default:
+        return 'primary';
+    }
+  };
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/90 backdrop-blur-md transition-colors duration-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
         {/* Brand Logo */}
-        <a
-          href="#"
+        <Link
+          to="/"
           className="flex items-center gap-2.5 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg p-1"
           aria-label="WorkNest Home"
         >
@@ -38,7 +61,7 @@ export const Navbar = ({ onOpenAuthPlaceholder }) => {
           <span className="text-lg font-bold tracking-tight text-foreground">
             WorkNest
           </span>
-        </a>
+        </Link>
 
         {/* Desktop Navigation Links */}
         <nav className="hidden md:flex items-center gap-6" aria-label="Main Navigation">
@@ -67,22 +90,53 @@ export const Navbar = ({ onOpenAuthPlaceholder }) => {
             <span className="sr-only">Toggle theme</span>
           </Button>
 
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onOpenAuthPlaceholder}
-          >
-            Sign In
-          </Button>
+          {isAuthenticated ? (
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-secondary/50 border border-border text-xs">
+                <span className="font-semibold text-foreground">{user?.name}</span>
+                <Badge variant={getRoleBadgeVariant(user?.role)} size="sm">
+                  {user?.role}
+                </Badge>
+              </div>
 
-          <Button
-            variant="primary"
-            size="sm"
-            rightIcon={ArrowRight}
-            onClick={onOpenAuthPlaceholder}
-          >
-            Get Started
-          </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                leftIcon={LayoutDashboard}
+                onClick={() => navigate('/app')}
+              >
+                Open WorkNest
+              </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                leftIcon={LogOut}
+                onClick={logout}
+              >
+                Sign Out
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate('/login')}
+              >
+                Sign In
+              </Button>
+
+              <Button
+                variant="primary"
+                size="sm"
+                rightIcon={ArrowRight}
+                onClick={() => navigate('/register')}
+              >
+                Get Started
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Mobile Menu & Theme Button */}
@@ -124,29 +178,66 @@ export const Navbar = ({ onOpenAuthPlaceholder }) => {
           </nav>
 
           <div className="pt-3 border-t border-border flex flex-col gap-2">
-            <Button
-              variant="outline"
-              size="md"
-              fullWidth
-              onClick={() => {
-                setMobileMenuOpen(false);
-                onOpenAuthPlaceholder();
-              }}
-            >
-              Sign In
-            </Button>
-            <Button
-              variant="primary"
-              size="md"
-              fullWidth
-              rightIcon={ArrowRight}
-              onClick={() => {
-                setMobileMenuOpen(false);
-                onOpenAuthPlaceholder();
-              }}
-            >
-              Get Started
-            </Button>
+            {isAuthenticated ? (
+              <>
+                <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-secondary/50 text-xs">
+                  <span className="font-semibold text-foreground">{user?.name}</span>
+                  <Badge variant={getRoleBadgeVariant(user?.role)} size="sm">
+                    {user?.role}
+                  </Badge>
+                </div>
+                <Button
+                  variant="primary"
+                  size="md"
+                  fullWidth
+                  leftIcon={LayoutDashboard}
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    navigate('/app');
+                  }}
+                >
+                  Open WorkNest
+                </Button>
+                <Button
+                  variant="outline"
+                  size="md"
+                  fullWidth
+                  leftIcon={LogOut}
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    logout();
+                  }}
+                >
+                  Sign Out
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  variant="outline"
+                  size="md"
+                  fullWidth
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    navigate('/login');
+                  }}
+                >
+                  Sign In
+                </Button>
+                <Button
+                  variant="primary"
+                  size="md"
+                  fullWidth
+                  rightIcon={ArrowRight}
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    navigate('/register');
+                  }}
+                >
+                  Get Started
+                </Button>
+              </>
+            )}
           </div>
         </div>
       )}

@@ -1,9 +1,12 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ArrowRight, ChevronDown, ShieldCheck, Zap, Users } from 'lucide-react';
 import { Button, Badge } from '../ui';
 import ProductPreview from './ProductPreview';
 
-export const HeroSection = ({ onOpenAuthPlaceholder }) => {
+export const HeroSection = () => {
+  const navigate = useNavigate();
+
   const scrollToCapabilities = () => {
     const element = document.querySelector('#capabilities');
     if (element) {
@@ -43,7 +46,7 @@ export const HeroSection = ({ onOpenAuthPlaceholder }) => {
               variant="primary"
               size="lg"
               rightIcon={ArrowRight}
-              onClick={onOpenAuthPlaceholder}
+              onClick={() => navigate('/register')}
               className="w-full sm:w-auto"
             >
               Get Started

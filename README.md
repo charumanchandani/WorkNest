@@ -13,17 +13,18 @@ WorkNest delivers a consolidated operational workspace for organizations to mana
 ## Technology Stack
 
 ### Frontend
-- **Framework**: React 18 / 19 with Vite
-- **Routing**: React Router DOM (v6 / v7)
-- **Styling**: Tailwind CSS
-- **HTTP Client**: Axios
+- **Framework**: React 18 with Vite
+- **Routing**: React Router DOM
+- **Styling**: Tailwind CSS with Semantic Design System Tokens
+- **HTTP Client**: Axios (with Credentials / HttpOnly Cookie support)
 - **Iconography**: Lucide React
+- **State & Context**: AuthContext, ThemeContext
 
 ### Backend
 - **Runtime**: Node.js
 - **Framework**: Express.js
 - **Database**: MongoDB with Mongoose ODM
-- **Security & Auth**: JSON Web Tokens (JWT), bcryptjs, CORS, Helmet
+- **Security & Auth**: JSON Web Tokens (JWT via HttpOnly Cookies), bcryptjs password hashing, CORS, Cookie-Parser
 - **Configuration**: Dotenv
 
 ---
@@ -36,13 +37,13 @@ WorkNest follows a decoupled client-server architecture with clear separation of
 WorkNest/
 ├── frontend/                # Client application (React + Vite + Tailwind CSS)
 │   ├── src/
-│   │   ├── components/      # Shared reusable UI components
-│   │   ├── layouts/         # Layout wrappers (public, authenticated, dashboards)
-│   │   ├── pages/           # Page view components
-│   │   ├── routes/          # Route declarations and guards
-│   │   ├── context/         # React Context providers (Auth, Theme)
-│   │   ├── hooks/           # Custom React hooks
-│   │   ├── services/        # Centralized API service layer
+│   │   ├── components/      # UI components (Button, Input, Card, Modal, etc.) & Landing sections
+│   │   ├── layouts/         # Layout wrappers
+│   │   ├── pages/           # LandingPage, LoginPage, RegisterPage, AppPlaceholderPage
+│   │   ├── routes/          # AppRoutes, ProtectedRoute, PublicOnlyRoute
+│   │   ├── context/         # AuthContext, ThemeContext
+│   │   ├── hooks/           # useAuth, useTheme
+│   │   ├── services/        # apiClient, authService
 │   │   ├── utils/           # Helper functions & formatting utilities
 │   │   ├── constants/       # App constants and configuration tokens
 │   │   └── assets/          # Static assets and icons
@@ -51,18 +52,44 @@ WorkNest/
 ├── backend/                 # API server (Node.js + Express + MongoDB)
 │   ├── src/
 │   │   ├── config/          # Database connection & environment configuration
-│   │   ├── controllers/     # Request handlers & controllers
-│   │   ├── middleware/      # Auth, validation & error handling middleware
-│   │   ├── models/          # Mongoose schemas & data models
-│   │   ├── routes/          # REST API route definitions
+│   │   ├── controllers/     # authController, healthController
+│   │   ├── middleware/      # authMiddleware (protect), roleMiddleware (authorizeRoles), errorHandler
+│   │   ├── models/          # User (Mongoose schema with bcrypt hashing)
+│   │   ├── routes/          # authRoutes, healthRoutes
+│   │   ├── scripts/         # seedUsers.js (development test accounts)
 │   │   ├── services/        # Business logic layer
-│   │   └── utils/           # Utility functions & response formatters
+│   │   └── utils/           # token, responseHandler
 │   ├── server.js            # Server entrypoint & Express bootstrapping
 │   └── package.json
 │
 ├── .gitignore
 └── README.md
 ```
+
+---
+
+## Role-Based Access Control (RBAC)
+
+WorkNest enforces role authorization on both backend endpoints and frontend route guards:
+
+| Role | Description | Enrollment |
+| :--- | :--- | :--- |
+| **`EMPLOYEE`** | Self-service access for personal attendance, time-off requests, assigned tasks, and company resources. | Default for public registration |
+| **`MANAGER`** | Department-level access for team availability monitoring, leave approval queues, and task delegation. | Organization-assigned / Seeded |
+| **`ADMIN`** | Enterprise-level access for organization management, employee provisioning, global policies, and reports. | Organization-assigned / Seeded |
+
+---
+
+## Authentication API Endpoints
+
+All authentication endpoints are located under `/api/auth`:
+
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/auth/register` | Public | Enrolls new user with `EMPLOYEE` role and sets HttpOnly JWT cookie |
+| `POST` | `/api/auth/login` | Public | Verifies credentials and sets HttpOnly JWT cookie |
+| `GET` | `/api/auth/me` | Private | Returns safe current authenticated user profile (`id`, `name`, `email`, `role`) |
+| `POST` | `/api/auth/logout` | Private/Public | Invalidate session and clears `worknest_token` cookie |
 
 ---
 
@@ -99,10 +126,14 @@ npm start
 ```
 By default, the backend API will run on `http://localhost:5000`.
 
-Health Check:
+##### Seed Development Test Accounts (Optional):
 ```bash
-curl http://localhost:5000/api/health
+npm run seed
 ```
+Creates default development accounts:
+- **Employee**: `employee@worknest.io` / `Password123!`
+- **Manager**: `manager@worknest.io` / `Password123!`
+- **Admin**: `admin@worknest.io` / `Password123!`
 
 #### 3. Frontend Setup
 ```bash
@@ -127,7 +158,8 @@ Open `http://localhost:5173` in your browser.
 PORT=5000
 NODE_ENV=development
 MONGODB_URI=mongodb://localhost:27017/worknest
-JWT_SECRET=your_jwt_secret_key_here
+JWT_SECRET=your_super_secret_jwt_key_change_in_production
+JWT_EXPIRES_IN=7d
 CLIENT_URL=http://localhost:5173
 ```
 
@@ -148,6 +180,7 @@ VITE_API_BASE_URL=http://localhost:5000/api
 
 ### Backend
 - `npm run dev`: Runs the server with Nodemon auto-reloading
+- `npm run seed`: Seeds development test accounts
 - `npm start`: Runs the server in production mode
 - `npm run lint`: Runs ESLint / code style checks
 

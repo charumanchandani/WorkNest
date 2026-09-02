@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import { ENV } from './config/env.js';
 import apiRoutes from './routes/index.js';
 import { notFoundHandler } from './middleware/notFound.js';
@@ -14,6 +15,7 @@ app.use(
     credentials: true,
   })
 );
+app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
