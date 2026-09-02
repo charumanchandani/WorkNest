@@ -10,3 +10,6 @@ export { AttendancePage } from './AttendancePage';
 export { AttendanceManagePage } from './AttendanceManagePage';
 export { LeavePage } from './LeavePage';
 export { LeaveManagePage } from './LeaveManagePage';
+export { TasksPage } from './TasksPage';
+export { TaskDetailPage } from './TaskDetailPage';
+export { TasksManagePage } from './TasksManagePage';

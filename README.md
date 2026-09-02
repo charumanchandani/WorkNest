@@ -37,13 +37,13 @@ WorkNest follows a decoupled client-server architecture with clear separation of
 WorkNest/
 ├── frontend/                # Client application (React + Vite + Tailwind CSS)
 │   ├── src/
-│   │   ├── components/      # UI components, Landing sections, App Shell, Employees, Departments, Attendance, Leave
+│   │   ├── components/      # UI components, Landing sections, App Shell, Employees, Departments, Attendance, Leave, Tasks
 │   │   ├── layouts/         # AppLayout (Sidebar, Topbar, Content Outlet)
-│   │   ├── pages/           # LandingPage, LoginPage, RegisterPage, EmployeeDashboard, EmployeesPage, EmployeeDetailPage, DepartmentsPage, DepartmentDetailPage, AttendancePage, AttendanceManagePage, LeavePage, LeaveManagePage
+│   │   ├── pages/           # LandingPage, LoginPage, RegisterPage, EmployeeDashboard, EmployeesPage, EmployeeDetailPage, DepartmentsPage, DepartmentDetailPage, AttendancePage, AttendanceManagePage, LeavePage, LeaveManagePage, TasksPage, TaskDetailPage, TasksManagePage
 │   │   ├── routes/          # AppRoutes, ProtectedRoute, PublicOnlyRoute
 │   │   ├── context/         # AuthContext, ThemeContext
 │   │   ├── hooks/           # useAuth, useTheme
-│   │   ├── services/        # apiClient, authService, employeeService, departmentService, attendanceService, leaveService
+│   │   ├── services/        # api, authService, employeeService, departmentService, attendanceService, leaveService, taskService
 │   │   ├── utils/           # Helper functions & formatting utilities
 │   │   ├── constants/       # App constants and configuration tokens
 │   │   └── assets/          # Static assets and icons
@@ -52,13 +52,13 @@ WorkNest/
 ├── backend/                 # API server (Node.js + Express + MongoDB)
 │   ├── src/
 │   │   ├── config/          # Database connection & environment configuration
-│   │   ├── constants/       # attendance, leave constants (Timezone: Asia/Kolkata, quotas)
-│   │   ├── controllers/     # authController, employeeController, departmentController, attendanceController, leaveController, healthController
+│   │   ├── constants/       # attendance, leave, task constants (Timezone: Asia/Kolkata, quotas, priorities, statuses)
+│   │   ├── controllers/     # authController, employeeController, departmentController, attendanceController, leaveController, taskController, healthController
 │   │   ├── middleware/      # authMiddleware (protect), roleMiddleware (authorizeRoles), errorHandler
-│   │   ├── models/          # User, Department, Attendance, Leave, LeaveBalance
-│   │   ├── routes/          # authRoutes, employeeRoutes, departmentRoutes, attendanceRoutes, leaveRoutes, healthRoutes
+│   │   ├── models/          # User, Department, Attendance, Leave, LeaveBalance, Task
+│   │   ├── routes/          # authRoutes, employeeRoutes, departmentRoutes, attendanceRoutes, leaveRoutes, taskRoutes, healthRoutes
 │   │   ├── scripts/         # seedUsers.js (development test accounts & standard departments)
-│   │   ├── services/        # employeeService, departmentService, attendanceService, leaveService
+│   │   ├── services/        # employeeService, departmentService, attendanceService, leaveService, taskService
 │   │   └── utils/           # token, responseHandler
 │   ├── server.js            # Server entrypoint & Express bootstrapping
 │   └── package.json
@@ -75,9 +75,9 @@ WorkNest enforces role authorization on both backend endpoints and frontend rout
 
 | Role | Description | Enrollment / Access |
 | :--- | :--- | :--- |
-| **`EMPLOYEE`** | Self-service access for personal daily check-in/out, attendance history, monthly summary, leave application, personal leave history, balance review, and profile details. | Default for public registration |
-| **`MANAGER`** | Department-level access for team availability monitoring, staff attendance logs, reviewing/approving/rejecting leave applications for managed department staff, and viewing employee directory. | Organization-assigned / Seeded |
-| **`ADMIN`** | Enterprise-level access for full organization attendance and leave oversight, employee provisioning, department management, and policy enforcement. | Organization-assigned / Seeded |
+| **`EMPLOYEE`** | Self-service access for personal daily check-in/out, attendance history, monthly summary, leave application, personal leave history, balance review, personal assigned tasks view, task status progression, and profile details. | Default for public registration |
+| **`MANAGER`** | Department-level access for team availability monitoring, staff attendance logs, reviewing/approving/rejecting leave applications for managed department staff, assigning & editing department tasks, monitoring team workload, and viewing employee directory. | Organization-assigned / Seeded |
+| **`ADMIN`** | Enterprise-level access for full organization attendance, leave, and task oversight, employee provisioning, department management, and policy enforcement. | Organization-assigned / Seeded |
 
 ---
 
@@ -92,7 +92,18 @@ WorkNest enforces role authorization on both backend endpoints and frontend rout
 | `GET` | `/api/auth/me` | Private | Returns safe current authenticated user profile (`id`, `name`, `email`, `role`) |
 | `POST` | `/api/auth/logout` | Private/Public | Invalidate session and clears `worknest_token` cookie |
 
-### 2. Leave Management (`/api/leaves`)
+### 2. Task Management (`/api/tasks`)
+
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/tasks` | Admin, Manager | Create and assign a new workplace task (validates assignee status, department, and deadline) |
+| `GET` | `/api/tasks` | Private (All) | Scoped task list with search, priority, status, department, and workload summary metrics |
+| `GET` | `/api/tasks/my` | Private (All) | Paginated personal tasks assigned to authenticated employee with summary counts |
+| `GET` | `/api/tasks/:id` | Private (Authorized) | Retrieve full task specifications, timeline, and assignment metadata |
+| `PATCH` | `/api/tasks/:id` | Admin, Manager | Update task title, description, priority, assignee, or deadline |
+| `PATCH` | `/api/tasks/:id/status` | Assignee, Admin, Manager | Progress task status (`TODO` &rarr; `IN_PROGRESS` &rarr; `COMPLETED`) with state transition validation |
+
+### 3. Leave Management (`/api/leaves`)
 
 | Method | Endpoint | Access | Description |
 | :--- | :--- | :--- | :--- |
@@ -105,7 +116,7 @@ WorkNest enforces role authorization on both backend endpoints and frontend rout
 | `PATCH` | `/api/leaves/:id/approve` | Admin, Manager | Approve a pending leave request and update employee balance atomically |
 | `PATCH` | `/api/leaves/:id/reject` | Admin, Manager | Reject a pending leave request with optional review notes |
 
-### 3. Attendance Management (`/api/attendance`)
+### 4. Attendance Management (`/api/attendance`)
 
 | Method | Endpoint | Access | Description |
 | :--- | :--- | :--- | :--- |
@@ -117,7 +128,7 @@ WorkNest enforces role authorization on both backend endpoints and frontend rout
 | `GET` | `/api/attendance` | Admin, Manager | Scoped attendance monitoring list with search, department, and status filters |
 | `GET` | `/api/attendance/:id` | Private (Authorized) | Retrieve full attendance record details |
 
-### 4. Employee Management (`/api/employees`)
+### 5. Employee Management (`/api/employees`)
 
 | Method | Endpoint | Access | Description |
 | :--- | :--- | :--- | :--- |
@@ -127,7 +138,7 @@ WorkNest enforces role authorization on both backend endpoints and frontend rout
 | `PATCH` | `/api/employees/:id` | Admin | Update employee profile information and department |
 | `PATCH` | `/api/employees/:id/status` | Admin | Activate or deactivate employee account (with last active admin protection) |
 
-### 5. Departments & Organization Structure (`/api/departments`)
+### 6. Departments & Organization Structure (`/api/departments`)
 
 | Method | Endpoint | Access | Description |
 | :--- | :--- | :--- | :--- |

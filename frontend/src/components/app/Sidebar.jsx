@@ -16,6 +16,7 @@ import {
   Building2,
   CalendarCheck2,
   FileCheck2,
+  ListTodo,
 } from 'lucide-react';
 import { useAuth } from '../../hooks';
 import { Badge } from '../ui';
@@ -24,12 +25,23 @@ export const Sidebar = ({ isOpen, onClose, onShowModuleNotice }) => {
   const { user } = useAuth();
   const location = useLocation();
 
+  const isMyTasksActive =
+    (location.pathname === '/app/tasks' ||
+      (location.pathname.startsWith('/app/tasks/') && location.pathname !== '/app/tasks/manage'));
+
   const mainNavItems = [
     {
       name: 'Overview',
       path: '/app',
       icon: LayoutDashboard,
       active: location.pathname === '/app',
+      phase: null,
+    },
+    {
+      name: 'My Tasks',
+      path: '/app/tasks',
+      icon: CheckSquare,
+      active: isMyTasksActive,
       phase: null,
     },
     {
@@ -45,12 +57,6 @@ export const Sidebar = ({ isOpen, onClose, onShowModuleNotice }) => {
       icon: Calendar,
       active: location.pathname === '/app/leave',
       phase: null,
-    },
-    {
-      name: 'My Tasks',
-      path: null,
-      icon: CheckSquare,
-      phase: 'Phase 9',
     },
     {
       name: 'Documents',
@@ -101,6 +107,7 @@ export const Sidebar = ({ isOpen, onClose, onShowModuleNotice }) => {
   const isDepartmentsActive = location.pathname.startsWith('/app/departments');
   const isAttendanceManageActive = location.pathname === '/app/attendance/manage';
   const isLeaveManageActive = location.pathname === '/app/leave/manage';
+  const isTasksManageActive = location.pathname === '/app/tasks/manage';
 
   const sidebarContent = (
     <div className="flex flex-col h-full bg-card border-r border-border text-card-foreground">
@@ -203,6 +210,28 @@ export const Sidebar = ({ isOpen, onClose, onShowModuleNotice }) => {
             <span className="px-3 text-[10px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
               {isAdmin ? 'Organization Admin' : 'Team Management'}
             </span>
+
+            {/* Task Management Route */}
+            <Link
+              to="/app/tasks/manage"
+              onClick={onClose}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                isTasksManageActive
+                  ? 'bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 font-semibold border border-teal-200/60 dark:border-teal-800/60'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-secondary/70'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <ListTodo
+                  className={`w-4 h-4 transition-colors ${
+                    isTasksManageActive
+                      ? 'text-teal-600 dark:text-teal-400'
+                      : 'text-muted-foreground group-hover:text-foreground'
+                  }`}
+                />
+                <span>Task Workload</span>
+              </div>
+            </Link>
 
             {/* Leave Management Route */}
             <Link

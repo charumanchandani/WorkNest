@@ -13,6 +13,9 @@ import {
   AttendanceManagePage,
   LeavePage,
   LeaveManagePage,
+  TasksPage,
+  TaskDetailPage,
+  TasksManagePage,
 } from '../pages';
 import { AppLayout } from '../layouts';
 import ProtectedRoute from './ProtectedRoute';
@@ -52,6 +55,18 @@ export const AppRoutes = () => {
         }
       >
         <Route index element={<EmployeeDashboard />} />
+
+        {/* Phase 9 Task Management */}
+        <Route path="tasks" element={<TasksPage />} />
+        <Route path="tasks/:id" element={<TaskDetailPage />} />
+        <Route
+          path="tasks/manage"
+          element={
+            <ProtectedRoute allowedRoles={['ADMIN', 'MANAGER']}>
+              <TasksManagePage />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Phase 8 Leave Management */}
         <Route path="leave" element={<LeavePage />} />

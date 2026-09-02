@@ -14,6 +14,7 @@ import {
 import { dashboardMockData } from '../constants/dashboardData';
 import attendanceService from '../services/attendanceService';
 import leaveService from '../services/leaveService';
+import taskService from '../services/taskService';
 
 export const EmployeeDashboard = () => {
   const { user } = useAuth();
@@ -27,6 +28,11 @@ export const EmployeeDashboard = () => {
   // Real leave balance state
   const [leaveBalance, setLeaveBalance] = useState(null);
   const [leaveError, setLeaveError] = useState('');
+
+  // Real tasks state
+  const [personalTasks, setPersonalTasks] = useState([]);
+  const [tasksSummary, setTasksSummary] = useState(null);
+  const [tasksError, setTasksError] = useState('');
 
   useEffect(() => {
     const fetchTodayAttendance = async () => {
@@ -54,8 +60,22 @@ export const EmployeeDashboard = () => {
       }
     };
 
+    const fetchMyTasks = async () => {
+      try {
+        setTasksError('');
+        const res = await taskService.getMyTasks({ limit: 4 });
+        if (res?.data) {
+          setPersonalTasks(res.data.records || []);
+          setTasksSummary(res.data.summary || null);
+        }
+      } catch (err) {
+        setTasksError(err.formattedMessage || 'Failed to load assigned tasks.');
+      }
+    };
+
     fetchTodayAttendance();
     fetchLeaveBalance();
+    fetchMyTasks();
   }, []);
 
   // Extract first name
@@ -98,7 +118,7 @@ export const EmployeeDashboard = () => {
         <div className="flex items-center gap-2">
           <div className="px-3 py-1.5 rounded-lg bg-teal-50 dark:bg-teal-950/50 border border-teal-200/70 dark:border-teal-800/70 flex items-center gap-2 text-xs text-teal-800 dark:text-teal-300">
             <Sparkles className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />
-            <span className="font-medium">Phase 8 Live</span>
+            <span className="font-medium">Phase 9 Live</span>
           </div>
         </div>
       </div>
@@ -116,10 +136,11 @@ export const EmployeeDashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column (2 cols on lg screens): Tasks & Attendance */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Priority Tasks Widget */}
+          {/* Priority Tasks Widget (Real Data) */}
           <TasksWidget
-            initialTasks={dashboardMockData.tasks}
-            onTasksClick={onShowModuleNotice}
+            tasks={personalTasks}
+            summary={tasksSummary}
+            error={tasksError}
           />
 
           {/* Real Workday Attendance Widget */}

@@ -13,6 +13,8 @@ import {
   CalendarCheck2,
   Calendar,
   FileCheck2,
+  CheckSquare,
+  ListTodo,
 } from 'lucide-react';
 import { useTheme } from '../../hooks';
 import { Button } from '../ui';
@@ -27,7 +29,16 @@ export const Topbar = ({ onOpenMobileMenu, onShowModuleNotice }) => {
   let pageTitle = 'Employee Dashboard';
   let TitleIcon = LayoutDashboard;
 
-  if (location.pathname === '/app/leave') {
+  if (location.pathname === '/app/tasks') {
+    pageTitle = 'My Tasks & Deliverables';
+    TitleIcon = CheckSquare;
+  } else if (location.pathname === '/app/tasks/manage') {
+    pageTitle = 'Task Management & Workload';
+    TitleIcon = ListTodo;
+  } else if (location.pathname.startsWith('/app/tasks/')) {
+    pageTitle = 'Task Details';
+    TitleIcon = CheckSquare;
+  } else if (location.pathname === '/app/leave') {
     pageTitle = 'My Leave & Time Off';
     TitleIcon = Calendar;
   } else if (location.pathname === '/app/leave/manage') {
