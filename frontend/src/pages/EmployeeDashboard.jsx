@@ -15,6 +15,7 @@ import { dashboardMockData } from '../constants/dashboardData';
 import attendanceService from '../services/attendanceService';
 import leaveService from '../services/leaveService';
 import taskService from '../services/taskService';
+import activityService from '../services/activityService';
 
 export const EmployeeDashboard = () => {
   const { user } = useAuth();
@@ -33,6 +34,26 @@ export const EmployeeDashboard = () => {
   const [personalTasks, setPersonalTasks] = useState([]);
   const [tasksSummary, setTasksSummary] = useState(null);
   const [tasksError, setTasksError] = useState('');
+
+  // Real activity feed state
+  const [activities, setActivities] = useState([]);
+  const [activitiesLoading, setActivitiesLoading] = useState(false);
+  const [activitiesError, setActivitiesError] = useState('');
+
+  const fetchActivities = async () => {
+    try {
+      setActivitiesLoading(true);
+      setActivitiesError('');
+      const res = await activityService.getActivities({ limit: 6 });
+      if (res?.data) {
+        setActivities(res.data.records || res.data.activities || res.data.data || []);
+      }
+    } catch (err) {
+      setActivitiesError(err.formattedMessage || 'Failed to load recent activity.');
+    } finally {
+      setActivitiesLoading(false);
+    }
+  };
 
   useEffect(() => {
     const fetchTodayAttendance = async () => {
@@ -76,6 +97,7 @@ export const EmployeeDashboard = () => {
     fetchTodayAttendance();
     fetchLeaveBalance();
     fetchMyTasks();
+    fetchActivities();
   }, []);
 
   // Extract first name
@@ -158,8 +180,13 @@ export const EmployeeDashboard = () => {
             error={leaveError}
           />
 
-          {/* Recent Operational Activity Feed */}
-          <ActivityFeed activities={dashboardMockData.recentActivity} />
+          {/* Recent Operational Activity Feed (Real Data) */}
+          <ActivityFeed
+            activities={activities}
+            loading={activitiesLoading}
+            error={activitiesError}
+            onRetry={fetchActivities}
+          />
         </div>
       </div>
     </div>

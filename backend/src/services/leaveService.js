@@ -3,6 +3,16 @@ import Leave from '../models/Leave.js';
 import LeaveBalance from '../models/LeaveBalance.js';
 import User from '../models/User.js';
 import Department from '../models/Department.js';
+import notificationService from './notificationService.js';
+import activityService from './activityService.js';
+import {
+  NOTIFICATION_TYPE,
+  NOTIFICATION_ENTITY_TYPE,
+} from '../constants/notification.js';
+import {
+  ACTIVITY_ACTION,
+  ACTIVITY_ENTITY_TYPE,
+} from '../constants/activity.js';
 import {
   LEAVE_TYPES,
   LEAVE_TYPES_LIST,
@@ -192,7 +202,37 @@ export const leaveService = {
     await newLeave.populate({
       path: 'employee',
       select: 'name email employeeId role jobTitle department status',
-      populate: { path: 'department', select: 'name code' },
+      populate: { path: 'department', select: 'name code manager' },
+    });
+
+    // Notify Department Manager if exists and not self
+    let managerId = null;
+    if (user.department) {
+      const dept = await Department.findById(user.department).select('manager');
+      if (dept && dept.manager && dept.manager.toString() !== user._id.toString()) {
+        managerId = dept.manager;
+      }
+    }
+    if (managerId) {
+      await notificationService.createNotification({
+        recipient: managerId,
+        type: NOTIFICATION_TYPE.LEAVE_SUBMITTED,
+        title: 'New Leave Request',
+        message: `${user.name} submitted a ${type} leave request (${startDate} to ${endDate}).`,
+        entityType: NOTIFICATION_ENTITY_TYPE.LEAVE,
+        entityId: newLeave._id,
+        metadata: { leaveId: newLeave._id, leaveType: type, startDate, endDate, applicantName: user.name },
+      });
+    }
+
+    // Log Activity
+    await activityService.createActivity({
+      actor: user._id,
+      action: ACTIVITY_ACTION.LEAVE_SUBMITTED,
+      entityType: ACTIVITY_ENTITY_TYPE.LEAVE,
+      entityId: newLeave._id,
+      description: `${user.name} submitted a ${type} leave request (${totalDays} day${totalDays > 1 ? 's' : ''})`,
+      metadata: { employeeId: user._id, targetUserId: user._id, leaveType: type, startDate, endDate, totalDays },
     });
 
     return newLeave.toSafeObject();
@@ -352,7 +392,31 @@ export const leaveService = {
     await leave.populate({
       path: 'employee',
       select: 'name email employeeId role jobTitle department status',
-      populate: { path: 'department', select: 'name code' },
+      populate: { path: 'department', select: 'name code manager' },
+    });
+
+    // Notify Manager if exists and not self
+    const empDept = leave.employee.department;
+    if (empDept && empDept.manager && empDept.manager.toString() !== leave.employee._id.toString()) {
+      await notificationService.createNotification({
+        recipient: empDept.manager,
+        type: NOTIFICATION_TYPE.LEAVE_CANCELLED,
+        title: 'Leave Request Cancelled',
+        message: `${leave.employee.name} cancelled their ${leave.leaveType} leave request (${leave.startDate} to ${leave.endDate}).`,
+        entityType: NOTIFICATION_ENTITY_TYPE.LEAVE,
+        entityId: leave._id,
+        metadata: { leaveId: leave._id, employeeId: leave.employee._id },
+      });
+    }
+
+    // Log Activity
+    await activityService.createActivity({
+      actor: userId,
+      action: ACTIVITY_ACTION.LEAVE_CANCELLED,
+      entityType: ACTIVITY_ENTITY_TYPE.LEAVE,
+      entityId: leave._id,
+      description: `${leave.employee.name} cancelled their ${leave.leaveType} leave request`,
+      metadata: { employeeId: leave.employee._id, targetUserId: leave.employee._id, leaveType: leave.leaveType },
     });
 
     return leave.toSafeObject();
@@ -597,6 +661,27 @@ export const leaveService = {
       },
     ]);
 
+    // Notify employee
+    await notificationService.createNotification({
+      recipient: leave.employee._id,
+      type: NOTIFICATION_TYPE.LEAVE_APPROVED,
+      title: 'Leave Request Approved',
+      message: `Your ${leave.leaveType} leave request (${leave.startDate} to ${leave.endDate}) has been approved.`,
+      entityType: NOTIFICATION_ENTITY_TYPE.LEAVE,
+      entityId: leave._id,
+      metadata: { leaveId: leave._id, leaveType: leave.leaveType, startDate: leave.startDate, endDate: leave.endDate },
+    });
+
+    // Log Activity
+    await activityService.createActivity({
+      actor: reviewerUser._id,
+      action: ACTIVITY_ACTION.LEAVE_APPROVED,
+      entityType: ACTIVITY_ENTITY_TYPE.LEAVE,
+      entityId: leave._id,
+      description: `${reviewerUser.name} approved ${leave.employee.name}'s ${leave.leaveType} leave request`,
+      metadata: { employeeId: leave.employee._id, targetUserId: leave.employee._id, leaveType: leave.leaveType, startDate: leave.startDate, endDate: leave.endDate },
+    });
+
     return leave.toSafeObject();
   },
 
@@ -667,6 +752,27 @@ export const leaveService = {
         select: 'name email role',
       },
     ]);
+
+    // Notify employee
+    await notificationService.createNotification({
+      recipient: leave.employee._id,
+      type: NOTIFICATION_TYPE.LEAVE_REJECTED,
+      title: 'Leave Request Rejected',
+      message: `Your ${leave.leaveType} leave request (${leave.startDate} to ${leave.endDate}) was rejected.${reviewComment ? ` Reason: ${reviewComment}` : ''}`,
+      entityType: NOTIFICATION_ENTITY_TYPE.LEAVE,
+      entityId: leave._id,
+      metadata: { leaveId: leave._id, leaveType: leave.leaveType, startDate: leave.startDate, endDate: leave.endDate, reviewComment },
+    });
+
+    // Log Activity
+    await activityService.createActivity({
+      actor: reviewerUser._id,
+      action: ACTIVITY_ACTION.LEAVE_REJECTED,
+      entityType: ACTIVITY_ENTITY_TYPE.LEAVE,
+      entityId: leave._id,
+      description: `${reviewerUser.name} rejected ${leave.employee.name}'s ${leave.leaveType} leave request`,
+      metadata: { employeeId: leave.employee._id, targetUserId: leave.employee._id, leaveType: leave.leaveType, reviewComment },
+    });
 
     return leave.toSafeObject();
   },

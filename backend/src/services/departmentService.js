@@ -1,6 +1,11 @@
 import mongoose from 'mongoose';
 import Department from '../models/Department.js';
 import User from '../models/User.js';
+import activityService from './activityService.js';
+import {
+  ACTIVITY_ACTION,
+  ACTIVITY_ENTITY_TYPE,
+} from '../constants/activity.js';
 
 // Helper to escape regex special characters
 const escapeRegex = (string) => {
@@ -118,7 +123,7 @@ export const departmentService = {
   /**
    * Create a new department
    */
-  async createDepartment(data) {
+  async createDepartment(data, actor = null) {
     const { name, code, description = '', manager = null } = data;
 
     if (!name || !name.trim()) {
@@ -196,13 +201,24 @@ export const departmentService = {
     await department.save();
     await department.populate('manager', 'name firstName lastName email role jobTitle employeeId status isActive');
 
+    if (actor) {
+      await activityService.createActivity({
+        actor: actor._id,
+        action: ACTIVITY_ACTION.DEPARTMENT_CREATED,
+        entityType: ACTIVITY_ENTITY_TYPE.DEPARTMENT,
+        entityId: department._id,
+        description: `${actor.name || 'Admin'} created department '${department.name}' (${department.code})`,
+        metadata: { departmentId: department._id, code: department.code },
+      });
+    }
+
     return department.toSafeObject(0);
   },
 
   /**
    * Update department details
    */
-  async updateDepartment(id, updateData) {
+  async updateDepartment(id, updateData, actor = null) {
     if (!mongoose.Types.ObjectId.isValid(id)) {
       const error = new Error('Invalid department ID format.');
       error.statusCode = 400;
@@ -287,6 +303,17 @@ export const departmentService = {
     await department.save();
     await department.populate('manager', 'name firstName lastName email role jobTitle employeeId status isActive');
 
+    if (actor) {
+      await activityService.createActivity({
+        actor: actor._id,
+        action: ACTIVITY_ACTION.DEPARTMENT_UPDATED,
+        entityType: ACTIVITY_ENTITY_TYPE.DEPARTMENT,
+        entityId: department._id,
+        description: `${actor.name || 'Admin'} updated department '${department.name}'`,
+        metadata: { departmentId: department._id, code: department.code },
+      });
+    }
+
     const employeeCount = await User.countDocuments({ department: department._id, status: 'ACTIVE' });
     return department.toSafeObject(employeeCount);
   },
@@ -294,7 +321,7 @@ export const departmentService = {
   /**
    * Activate or Deactivate department
    */
-  async updateDepartmentStatus(id, newStatus) {
+  async updateDepartmentStatus(id, newStatus, actor = null) {
     if (!mongoose.Types.ObjectId.isValid(id)) {
       const error = new Error('Invalid department ID format.');
       error.statusCode = 400;
@@ -335,6 +362,17 @@ export const departmentService = {
     await department.save();
     await department.populate('manager', 'name firstName lastName email role jobTitle employeeId status isActive');
 
+    if (actor) {
+      await activityService.createActivity({
+        actor: actor._id,
+        action: ACTIVITY_ACTION.DEPARTMENT_STATUS_CHANGED,
+        entityType: ACTIVITY_ENTITY_TYPE.DEPARTMENT,
+        entityId: department._id,
+        description: `${actor.name || 'Admin'} set status of department '${department.name}' to ${normalizedStatus}`,
+        metadata: { departmentId: department._id, status: normalizedStatus },
+      });
+    }
+
     const employeeCount = await User.countDocuments({ department: department._id, status: 'ACTIVE' });
     return department.toSafeObject(employeeCount);
   },
@@ -342,7 +380,7 @@ export const departmentService = {
   /**
    * Assign or remove department manager
    */
-  async updateDepartmentManager(id, managerId) {
+  async updateDepartmentManager(id, managerId, actor = null) {
     if (!mongoose.Types.ObjectId.isValid(id)) {
       const error = new Error('Invalid department ID format.');
       error.statusCode = 400;
@@ -389,6 +427,17 @@ export const departmentService = {
 
     await department.save();
     await department.populate('manager', 'name firstName lastName email role jobTitle employeeId status isActive');
+
+    if (actor) {
+      await activityService.createActivity({
+        actor: actor._id,
+        action: ACTIVITY_ACTION.DEPARTMENT_UPDATED,
+        entityType: ACTIVITY_ENTITY_TYPE.DEPARTMENT,
+        entityId: department._id,
+        description: `${actor.name || 'Admin'} updated manager for department '${department.name}'`,
+        metadata: { departmentId: department._id, managerId: department.manager },
+      });
+    }
 
     const employeeCount = await User.countDocuments({ department: department._id, status: 'ACTIVE' });
     return department.toSafeObject(employeeCount);

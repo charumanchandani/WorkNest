@@ -1,7 +1,18 @@
 import mongoose from 'mongoose';
 import Document from '../models/Document.js';
 import Department from '../models/Department.js';
+import User from '../models/User.js';
 import storageService from './storageService.js';
+import notificationService from './notificationService.js';
+import activityService from './activityService.js';
+import {
+  NOTIFICATION_TYPE,
+  NOTIFICATION_ENTITY_TYPE,
+} from '../constants/notification.js';
+import {
+  ACTIVITY_ACTION,
+  ACTIVITY_ENTITY_TYPE,
+} from '../constants/activity.js';
 import { DOCUMENT_CATEGORY_LIST, DOCUMENT_VISIBILITY_LIST } from '../constants/document.js';
 
 /**
@@ -115,6 +126,37 @@ export const createDocument = async ({
       { path: 'uploadedBy', select: 'name email role jobTitle' },
       { path: 'department', select: 'name code status' },
     ]);
+
+    // Notify eligible users
+    let targetUsers = [];
+    if (selectedVisibility === 'ORGANIZATION') {
+      targetUsers = await User.find({ _id: { $ne: user._id }, status: 'ACTIVE' }).select('_id');
+    } else if (selectedVisibility === 'DEPARTMENT' && departmentId) {
+      targetUsers = await User.find({ _id: { $ne: user._id }, department: departmentId, status: 'ACTIVE' }).select('_id');
+    }
+
+    if (targetUsers.length > 0) {
+      const notifList = targetUsers.map((u) => ({
+        recipient: u._id,
+        type: NOTIFICATION_TYPE.DOCUMENT_ADDED,
+        title: 'New Document Uploaded',
+        message: `A new document "${newDoc.title}" is available in the Document Vault.`,
+        entityType: NOTIFICATION_ENTITY_TYPE.DOCUMENT,
+        entityId: newDoc._id,
+        metadata: { documentId: newDoc._id, category: newDoc.category, visibility: newDoc.visibility },
+      }));
+      await notificationService.createNotifications(notifList);
+    }
+
+    // Log Activity
+    await activityService.createActivity({
+      actor: user._id,
+      action: ACTIVITY_ACTION.DOCUMENT_UPLOADED,
+      entityType: ACTIVITY_ENTITY_TYPE.DOCUMENT,
+      entityId: newDoc._id,
+      description: `${user.name} uploaded document "${newDoc.title}"`,
+      metadata: { documentId: newDoc._id, category: newDoc.category, visibility: newDoc.visibility },
+    });
 
     return newDoc.toSafeObject();
   } catch (error) {
@@ -475,7 +517,7 @@ export const updateDocument = async (id, updateData) => {
 /**
  * Archives a document (Admin only)
  */
-export const archiveDocument = async (id) => {
+export const archiveDocument = async (id, user = null) => {
   if (!mongoose.Types.ObjectId.isValid(id)) {
     const err = new Error('Invalid document identifier.');
     err.statusCode = 400;
@@ -495,6 +537,17 @@ export const archiveDocument = async (id) => {
     { path: 'uploadedBy', select: 'name email role jobTitle' },
     { path: 'department', select: 'name code status' },
   ]);
+
+  if (user) {
+    await activityService.createActivity({
+      actor: user._id,
+      action: ACTIVITY_ACTION.DOCUMENT_ARCHIVED,
+      entityType: ACTIVITY_ENTITY_TYPE.DOCUMENT,
+      entityId: document._id,
+      description: `${user.name} archived document "${document.title}"`,
+      metadata: { documentId: document._id },
+    });
+  }
 
   return document.toSafeObject();
 };

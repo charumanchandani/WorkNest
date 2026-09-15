@@ -39,7 +39,7 @@ export const getEmployeeById = async (req, res, next) => {
  */
 export const createEmployee = async (req, res, next) => {
   try {
-    const result = await employeeService.createEmployee(req.body);
+    const result = await employeeService.createEmployee(req.body, req.user);
     return sendSuccess(res, 201, 'Employee created successfully', result);
   } catch (error) {
     if (error.statusCode) {
@@ -56,7 +56,7 @@ export const createEmployee = async (req, res, next) => {
  */
 export const updateEmployee = async (req, res, next) => {
   try {
-    const employee = await employeeService.updateEmployee(req.params.id, req.body);
+    const employee = await employeeService.updateEmployee(req.params.id, req.body, req.user);
     return sendSuccess(res, 200, 'Employee updated successfully', { employee });
   } catch (error) {
     if (error.statusCode) {
@@ -80,7 +80,8 @@ export const updateEmployeeStatus = async (req, res, next) => {
 
     const employee = await employeeService.updateEmployeeStatus(
       req.params.id,
-      status
+      status,
+      req.user
     );
     return sendSuccess(
       res,

@@ -3,6 +3,11 @@ import Attendance from '../models/Attendance.js';
 import Leave from '../models/Leave.js';
 import User from '../models/User.js';
 import Department from '../models/Department.js';
+import activityService from './activityService.js';
+import {
+  ACTIVITY_ACTION,
+  ACTIVITY_ENTITY_TYPE,
+} from '../constants/activity.js';
 import {
   getTodayDateString,
   isLateCheckIn,
@@ -83,6 +88,15 @@ export const attendanceService = {
       populate: { path: 'department', select: 'name code' },
     });
 
+    await activityService.createActivity({
+      actor: user._id,
+      action: ACTIVITY_ACTION.ATTENDANCE_CHECKED_IN,
+      entityType: ACTIVITY_ENTITY_TYPE.ATTENDANCE,
+      entityId: record._id,
+      description: `${user.name} checked in (${record.status})`,
+      metadata: { date: record.date, status: record.status, employeeId: user._id },
+    });
+
     return record.toSafeObject();
   },
 
@@ -136,6 +150,15 @@ export const attendanceService = {
       path: 'employee',
       select: 'name email employeeId role jobTitle department status',
       populate: { path: 'department', select: 'name code' },
+    });
+
+    await activityService.createActivity({
+      actor: user._id,
+      action: ACTIVITY_ACTION.ATTENDANCE_CHECKED_OUT,
+      entityType: ACTIVITY_ENTITY_TYPE.ATTENDANCE,
+      entityId: record._id,
+      description: `${user.name} checked out (${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}m)`,
+      metadata: { date: record.date, totalMinutes, employeeId: user._id },
     });
 
     return record.toSafeObject();

@@ -16,6 +16,11 @@ import {
   TasksPage,
   TaskDetailPage,
   TasksManagePage,
+  DocumentsPage,
+  AnnouncementsPage,
+  AnnouncementDetailPage,
+  AnnouncementsManagePage,
+  NotificationsPage,
 } from '../pages';
 import { AppLayout } from '../layouts';
 import ProtectedRoute from './ProtectedRoute';
@@ -55,6 +60,9 @@ export const AppRoutes = () => {
         }
       >
         <Route index element={<EmployeeDashboard />} />
+
+        {/* Phase 11 In-App Notifications Center */}
+        <Route path="notifications" element={<NotificationsPage />} />
 
         {/* Phase 10 Document Vault */}
         <Route path="documents" element={<DocumentsPage />} />

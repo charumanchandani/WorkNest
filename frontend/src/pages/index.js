@@ -17,4 +17,5 @@ export { DocumentsPage } from './DocumentsPage';
 export { AnnouncementsPage } from './AnnouncementsPage';
 export { AnnouncementDetailPage } from './AnnouncementDetailPage';
 export { AnnouncementsManagePage } from './AnnouncementsManagePage';
+export { NotificationsPage } from './NotificationsPage';
 

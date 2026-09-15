@@ -183,6 +183,34 @@ WorkNest enforces role authorization on both backend endpoints and frontend rout
   - `DEPARTMENT`: Targeted specifically to active members of the selected department.
 - **Workflow & Expiration**: Structured state machine (`DRAFT` &rarr; `PUBLISHED` &rarr; `ARCHIVED`). Plain text content only (no HTML injection). Expired announcements automatically disappear from staff feeds without background cron jobs.
 
+### 9. In-App Notifications (`/api/notifications`)
+
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/notifications` | Private (All) | Paginated notifications feed strictly scoped to authenticated user with unread and type filters |
+| `GET` | `/api/notifications/unread-count` | Private (All) | Live unread notification counter for badge displays and polling |
+| `PATCH` | `/api/notifications/:id/read` | Private (Owner) | Mark a specific notification as read with server timestamp |
+| `PATCH` | `/api/notifications/read-all` | Private (All) | Mark all pending notifications for current user as read |
+
+- **Notification Triggers**:
+  - **Leave**: Leave submitted (&rarr; department manager), Leave approved/rejected (&rarr; employee), Leave cancelled (&rarr; department manager).
+  - **Tasks**: Task assigned/reassigned (&rarr; assignee), Task completed/updated (&rarr; assigner).
+  - **Documents**: Document uploaded (&rarr; eligible organization or department members).
+  - **Announcements**: Announcement published (&rarr; targeted staff or department members).
+- **Deduplication**: 10-second deduplication threshold prevents spamming identical notifications.
+
+### 10. Operational Activity & Audit Trail (`/api/activities`)
+
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/activities` | Private (All) | Paginated audit feed with entity type, action, actor, and date filters |
+
+- **RBAC Scoping**:
+  - `EMPLOYEE`: Strictly view personal operational activity and targeted workflow events.
+  - `MANAGER`: View team activities across managed departments in addition to personal logs.
+  - `ADMIN`: Organization-wide comprehensive audit and operational timeline.
+- **Security & Privacy**: Automatically strips passwords, tokens, full document payloads, and sensitive credentials from activity logs.
+
 ---
 
 ## Getting Started

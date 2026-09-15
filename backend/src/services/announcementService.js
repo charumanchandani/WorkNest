@@ -1,6 +1,17 @@
 import mongoose from 'mongoose';
 import Announcement from '../models/Announcement.js';
 import Department from '../models/Department.js';
+import User from '../models/User.js';
+import notificationService from './notificationService.js';
+import activityService from './activityService.js';
+import {
+  NOTIFICATION_TYPE,
+  NOTIFICATION_ENTITY_TYPE,
+} from '../constants/notification.js';
+import {
+  ACTIVITY_ACTION,
+  ACTIVITY_ENTITY_TYPE,
+} from '../constants/activity.js';
 import {
   ANNOUNCEMENT_TARGET_LIST,
   ANNOUNCEMENT_STATUS_LIST,
@@ -137,6 +148,44 @@ export const createAnnouncement = async ({
     { path: 'createdBy', select: 'name email role jobTitle' },
     { path: 'department', select: 'name code status' },
   ]);
+
+  if (initialStatus === 'PUBLISHED') {
+    let targetUsers = [];
+    if (selectedTarget === 'ORGANIZATION') {
+      targetUsers = await User.find({ _id: { $ne: user._id }, status: 'ACTIVE' }).select('_id');
+    } else if (selectedTarget === 'DEPARTMENT' && departmentId) {
+      targetUsers = await User.find({ _id: { $ne: user._id }, department: departmentId, status: 'ACTIVE' }).select('_id');
+    }
+    if (targetUsers.length > 0) {
+      const notifs = targetUsers.map((u) => ({
+        recipient: u._id,
+        type: NOTIFICATION_TYPE.ANNOUNCEMENT_PUBLISHED,
+        title: 'New Announcement Published',
+        message: `Company Announcement: "${announcement.title}".`,
+        entityType: NOTIFICATION_ENTITY_TYPE.ANNOUNCEMENT,
+        entityId: announcement._id,
+        metadata: { announcementId: announcement._id, targetType: announcement.targetType },
+      }));
+      await notificationService.createNotifications(notifs);
+    }
+    await activityService.createActivity({
+      actor: user._id,
+      action: ACTIVITY_ACTION.ANNOUNCEMENT_PUBLISHED,
+      entityType: ACTIVITY_ENTITY_TYPE.ANNOUNCEMENT,
+      entityId: announcement._id,
+      description: `${user.name} published announcement "${announcement.title}"`,
+      metadata: { announcementId: announcement._id, targetType: announcement.targetType },
+    });
+  } else {
+    await activityService.createActivity({
+      actor: user._id,
+      action: ACTIVITY_ACTION.ANNOUNCEMENT_CREATED,
+      entityType: ACTIVITY_ENTITY_TYPE.ANNOUNCEMENT,
+      entityId: announcement._id,
+      description: `${user.name} created draft announcement "${announcement.title}"`,
+      metadata: { announcementId: announcement._id, targetType: announcement.targetType },
+    });
+  }
 
   return announcement.toSafeObject();
 };
@@ -535,6 +584,36 @@ export const publishAnnouncement = async (id, user) => {
     { path: 'department', select: 'name code status' },
   ]);
 
+  // Notify target users
+  let targetUsers = [];
+  if (announcement.targetType === 'ORGANIZATION') {
+    targetUsers = await User.find({ _id: { $ne: user._id }, status: 'ACTIVE' }).select('_id');
+  } else if (announcement.targetType === 'DEPARTMENT' && announcement.department) {
+    const deptId = announcement.department._id || announcement.department;
+    targetUsers = await User.find({ _id: { $ne: user._id }, department: deptId, status: 'ACTIVE' }).select('_id');
+  }
+  if (targetUsers.length > 0) {
+    const notifs = targetUsers.map((u) => ({
+      recipient: u._id,
+      type: NOTIFICATION_TYPE.ANNOUNCEMENT_PUBLISHED,
+      title: 'New Announcement Published',
+      message: `Company Announcement: "${announcement.title}".`,
+      entityType: NOTIFICATION_ENTITY_TYPE.ANNOUNCEMENT,
+      entityId: announcement._id,
+      metadata: { announcementId: announcement._id, targetType: announcement.targetType },
+    }));
+    await notificationService.createNotifications(notifs);
+  }
+
+  await activityService.createActivity({
+    actor: user._id,
+    action: ACTIVITY_ACTION.ANNOUNCEMENT_PUBLISHED,
+    entityType: ACTIVITY_ENTITY_TYPE.ANNOUNCEMENT,
+    entityId: announcement._id,
+    description: `${user.name} published announcement "${announcement.title}"`,
+    metadata: { announcementId: announcement._id, targetType: announcement.targetType },
+  });
+
   return announcement.toSafeObject();
 };
 
@@ -575,6 +654,15 @@ export const archiveAnnouncement = async (id, user) => {
     { path: 'createdBy', select: 'name email role jobTitle' },
     { path: 'department', select: 'name code status' },
   ]);
+
+  await activityService.createActivity({
+    actor: user._id,
+    action: ACTIVITY_ACTION.ANNOUNCEMENT_ARCHIVED,
+    entityType: ACTIVITY_ENTITY_TYPE.ANNOUNCEMENT,
+    entityId: announcement._id,
+    description: `${user.name} archived announcement "${announcement.title}"`,
+    metadata: { announcementId: announcement._id },
+  });
 
   return announcement.toSafeObject();
 };

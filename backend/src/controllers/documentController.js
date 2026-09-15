@@ -86,7 +86,7 @@ export const downloadDocument = async (req, res, next) => {
  */
 export const updateDocument = async (req, res, next) => {
   try {
-    const document = await documentService.updateDocument(req.params.id, req.body);
+    const document = await documentService.updateDocument(req.params.id, req.body, req.user);
     return sendSuccess(res, 200, 'Document updated successfully.', { document });
   } catch (error) {
     next(error);
@@ -99,7 +99,7 @@ export const updateDocument = async (req, res, next) => {
  */
 export const archiveDocument = async (req, res, next) => {
   try {
-    const document = await documentService.archiveDocument(req.params.id);
+    const document = await documentService.archiveDocument(req.params.id, req.user);
     return sendSuccess(res, 200, 'Document archived successfully.', { document });
   } catch (error) {
     next(error);

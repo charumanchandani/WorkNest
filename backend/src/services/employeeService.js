@@ -1,6 +1,11 @@
 import mongoose from 'mongoose';
 import User from '../models/User.js';
 import Department from '../models/Department.js';
+import activityService from './activityService.js';
+import {
+  ACTIVITY_ACTION,
+  ACTIVITY_ENTITY_TYPE,
+} from '../constants/activity.js';
 
 // Helper to escape regex special characters
 const escapeRegex = (string) => {
@@ -99,7 +104,7 @@ export const employeeService = {
   /**
    * Create a new employee with User account
    */
-  async createEmployee(data) {
+  async createEmployee(data, actor = null) {
     const {
       firstName,
       lastName,
@@ -190,6 +195,17 @@ export const employeeService = {
     await newUser.save();
     await newUser.populate('department', 'name code status');
 
+    if (actor) {
+      await activityService.createActivity({
+        actor: actor._id,
+        action: ACTIVITY_ACTION.EMPLOYEE_CREATED,
+        entityType: ACTIVITY_ENTITY_TYPE.EMPLOYEE,
+        entityId: newUser._id,
+        description: `${actor.name || 'Admin'} created employee profile for ${newUser.name}`,
+        metadata: { employeeId: newUser._id, email: newUser.email, role: newUser.role },
+      });
+    }
+
     return {
       employee: newUser.toSafeObject(),
       temporaryPasswordNotice: initialPassword ? null : 'Temporary password initialized to default: Welcome@WN2026',
@@ -199,7 +215,7 @@ export const employeeService = {
   /**
    * Update employee profile details
    */
-  async updateEmployee(id, updateData) {
+  async updateEmployee(id, updateData, actor = null) {
     if (!mongoose.Types.ObjectId.isValid(id)) {
       const error = new Error('Invalid employee ID format.');
       error.statusCode = 400;
@@ -305,13 +321,25 @@ export const employeeService = {
 
     await user.save();
     await user.populate('department', 'name code status');
+
+    if (actor) {
+      await activityService.createActivity({
+        actor: actor._id,
+        action: ACTIVITY_ACTION.EMPLOYEE_UPDATED,
+        entityType: ACTIVITY_ENTITY_TYPE.EMPLOYEE,
+        entityId: user._id,
+        description: `${actor.name || 'Admin'} updated employee profile for ${user.name}`,
+        metadata: { employeeId: user._id },
+      });
+    }
+
     return user.toSafeObject();
   },
 
   /**
    * Activate or Deactivate employee
    */
-  async updateEmployeeStatus(id, newStatus) {
+  async updateEmployeeStatus(id, newStatus, actor = null) {
     if (!mongoose.Types.ObjectId.isValid(id)) {
       const error = new Error('Invalid employee ID format.');
       error.statusCode = 400;
@@ -351,6 +379,17 @@ export const employeeService = {
     user.isActive = normalizedStatus === 'ACTIVE';
     await user.save();
     await user.populate('department', 'name code status');
+
+    if (actor) {
+      await activityService.createActivity({
+        actor: actor._id,
+        action: ACTIVITY_ACTION.EMPLOYEE_STATUS_CHANGED,
+        entityType: ACTIVITY_ENTITY_TYPE.EMPLOYEE,
+        entityId: user._id,
+        description: `${actor.name || 'Admin'} updated status of ${user.name} to ${normalizedStatus}`,
+        metadata: { employeeId: user._id, status: normalizedStatus },
+      });
+    }
 
     return user.toSafeObject();
   },

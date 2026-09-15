@@ -34,6 +34,7 @@ export const Sidebar = ({ isOpen, onClose, onShowModuleNotice }) => {
     location.pathname === '/app/announcements' ||
     (location.pathname.startsWith('/app/announcements/') &&
       location.pathname !== '/app/announcements/manage');
+  const isNotificationsActive = location.pathname.startsWith('/app/notifications');
 
   const mainNavItems = [
     {
@@ -80,9 +81,10 @@ export const Sidebar = ({ isOpen, onClose, onShowModuleNotice }) => {
     },
     {
       name: 'Notifications',
-      path: null,
+      path: '/app/notifications',
       icon: Bell,
-      phase: 'Phase 11',
+      active: isNotificationsActive,
+      phase: null,
     },
   ];
 

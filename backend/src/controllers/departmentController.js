@@ -39,7 +39,7 @@ export const getDepartmentById = async (req, res, next) => {
  */
 export const createDepartment = async (req, res, next) => {
   try {
-    const department = await departmentService.createDepartment(req.body);
+    const department = await departmentService.createDepartment(req.body, req.user);
     return sendSuccess(res, 201, 'Department created successfully', { department });
   } catch (error) {
     if (error.statusCode) {
@@ -56,7 +56,7 @@ export const createDepartment = async (req, res, next) => {
  */
 export const updateDepartment = async (req, res, next) => {
   try {
-    const department = await departmentService.updateDepartment(req.params.id, req.body);
+    const department = await departmentService.updateDepartment(req.params.id, req.body, req.user);
     return sendSuccess(res, 200, 'Department updated successfully', { department });
   } catch (error) {
     if (error.statusCode) {
@@ -80,7 +80,8 @@ export const updateDepartmentStatus = async (req, res, next) => {
 
     const department = await departmentService.updateDepartmentStatus(
       req.params.id,
-      status
+      status,
+      req.user
     );
     return sendSuccess(
       res,
@@ -106,7 +107,8 @@ export const updateDepartmentManager = async (req, res, next) => {
     const { manager } = req.body;
     const department = await departmentService.updateDepartmentManager(
       req.params.id,
-      manager
+      manager,
+      req.user
     );
     return sendSuccess(res, 200, 'Department manager updated successfully', { department });
   } catch (error) {

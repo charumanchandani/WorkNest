@@ -2,6 +2,16 @@ import mongoose from 'mongoose';
 import Task from '../models/Task.js';
 import User from '../models/User.js';
 import Department from '../models/Department.js';
+import notificationService from './notificationService.js';
+import activityService from './activityService.js';
+import {
+  NOTIFICATION_TYPE,
+  NOTIFICATION_ENTITY_TYPE,
+} from '../constants/notification.js';
+import {
+  ACTIVITY_ACTION,
+  ACTIVITY_ENTITY_TYPE,
+} from '../constants/activity.js';
 import {
   TASK_STATUS,
   TASK_STATUS_LIST,
@@ -124,6 +134,29 @@ export const taskService = {
         select: 'name code',
       },
     ]);
+
+    // Notify assignee if not self
+    if (assignee._id.toString() !== creatorUser._id.toString()) {
+      await notificationService.createNotification({
+        recipient: assignee._id,
+        type: NOTIFICATION_TYPE.TASK_ASSIGNED,
+        title: 'New Task Assigned',
+        message: `You were assigned task: "${task.title}" by ${creatorUser.name}.`,
+        entityType: NOTIFICATION_ENTITY_TYPE.TASK,
+        entityId: task._id,
+        metadata: { taskId: task._id, priority: task.priority, dueDate: task.dueDate },
+      });
+    }
+
+    // Log Activity
+    await activityService.createActivity({
+      actor: creatorUser._id,
+      action: ACTIVITY_ACTION.TASK_CREATED,
+      entityType: ACTIVITY_ENTITY_TYPE.TASK,
+      entityId: task._id,
+      description: `${creatorUser.name} created task "${task.title}" and assigned it to ${assignee.name}`,
+      metadata: { taskId: task._id, targetUserId: assignee._id, employeeId: assignee._id, priority: task.priority, dueDate: task.dueDate },
+    });
 
     return task.toSafeObject();
   },
@@ -586,6 +619,27 @@ export const taskService = {
       },
     ]);
 
+    if (assignedTo && task.assignedTo && task.assignedTo._id.toString() !== updaterUser._id.toString()) {
+      await notificationService.createNotification({
+        recipient: task.assignedTo._id,
+        type: NOTIFICATION_TYPE.TASK_ASSIGNED,
+        title: 'Task Reassigned',
+        message: `Task "${task.title}" was reassigned to you by ${updaterUser.name}.`,
+        entityType: NOTIFICATION_ENTITY_TYPE.TASK,
+        entityId: task._id,
+        metadata: { taskId: task._id, priority: task.priority, dueDate: task.dueDate },
+      });
+    }
+
+    await activityService.createActivity({
+      actor: updaterUser._id,
+      action: ACTIVITY_ACTION.TASK_ASSIGNED,
+      entityType: ACTIVITY_ENTITY_TYPE.TASK,
+      entityId: task._id,
+      description: `${updaterUser.name} updated task "${task.title}"`,
+      metadata: { taskId: task._id, targetUserId: task.assignedTo?._id, priority: task.priority },
+    });
+
     return task.toSafeObject();
   },
 
@@ -666,6 +720,66 @@ export const taskService = {
         select: 'name code',
       },
     ]);
+
+    const isAssigneeUser = task.assignedTo && task.assignedTo._id.toString() === user._id.toString();
+
+    if (newStatus === TASK_STATUS.COMPLETED) {
+      // Notify assigner if updater is not assigner
+      if (task.assignedBy && !isAssigner) {
+        await notificationService.createNotification({
+          recipient: task.assignedBy._id,
+          type: NOTIFICATION_TYPE.TASK_COMPLETED,
+          title: 'Task Completed',
+          message: `Task "${task.title}" was marked completed by ${user.name}.`,
+          entityType: NOTIFICATION_ENTITY_TYPE.TASK,
+          entityId: task._id,
+          metadata: { taskId: task._id, completedBy: user.name },
+        });
+      }
+
+      // Log Activity
+      await activityService.createActivity({
+        actor: user._id,
+        action: ACTIVITY_ACTION.TASK_COMPLETED,
+        entityType: ACTIVITY_ENTITY_TYPE.TASK,
+        entityId: task._id,
+        description: `${user.name} completed task "${task.title}"`,
+        metadata: { taskId: task._id, targetUserId: task.assignedBy?._id, employeeId: task.assignedTo?._id },
+      });
+    } else {
+      // Status changed
+      if (task.assignedBy && !isAssigner) {
+        await notificationService.createNotification({
+          recipient: task.assignedBy._id,
+          type: NOTIFICATION_TYPE.TASK_STATUS_CHANGED,
+          title: 'Task Status Updated',
+          message: `Task "${task.title}" status changed to ${newStatus} by ${user.name}.`,
+          entityType: NOTIFICATION_ENTITY_TYPE.TASK,
+          entityId: task._id,
+          metadata: { taskId: task._id, status: newStatus },
+        });
+      } else if (task.assignedTo && !isAssigneeUser) {
+        await notificationService.createNotification({
+          recipient: task.assignedTo._id,
+          type: NOTIFICATION_TYPE.TASK_STATUS_CHANGED,
+          title: 'Task Status Updated',
+          message: `Task "${task.title}" status was changed to ${newStatus} by ${user.name}.`,
+          entityType: NOTIFICATION_ENTITY_TYPE.TASK,
+          entityId: task._id,
+          metadata: { taskId: task._id, status: newStatus },
+        });
+      }
+
+      // Log Activity
+      await activityService.createActivity({
+        actor: user._id,
+        action: ACTIVITY_ACTION.TASK_STATUS_CHANGED,
+        entityType: ACTIVITY_ENTITY_TYPE.TASK,
+        entityId: task._id,
+        description: `${user.name} updated task "${task.title}" status to ${newStatus}`,
+        metadata: { taskId: task._id, targetUserId: task.assignedTo?._id, newStatus },
+      });
+    }
 
     return task.toSafeObject();
   },
