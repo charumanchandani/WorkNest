@@ -56,6 +56,21 @@ export const AppRoutes = () => {
       >
         <Route index element={<EmployeeDashboard />} />
 
+        {/* Phase 10 Document Vault */}
+        <Route path="documents" element={<DocumentsPage />} />
+
+        {/* Phase 10 Company Announcements */}
+        <Route path="announcements" element={<AnnouncementsPage />} />
+        <Route path="announcements/:id" element={<AnnouncementDetailPage />} />
+        <Route
+          path="announcements/manage"
+          element={
+            <ProtectedRoute allowedRoles={['ADMIN', 'MANAGER']}>
+              <AnnouncementsManagePage />
+            </ProtectedRoute>
+          }
+        />
+
         {/* Phase 9 Task Management */}
         <Route path="tasks" element={<TasksPage />} />
         <Route path="tasks/:id" element={<TaskDetailPage />} />

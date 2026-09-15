@@ -26,8 +26,14 @@ export const Sidebar = ({ isOpen, onClose, onShowModuleNotice }) => {
   const location = useLocation();
 
   const isMyTasksActive =
-    (location.pathname === '/app/tasks' ||
-      (location.pathname.startsWith('/app/tasks/') && location.pathname !== '/app/tasks/manage'));
+    location.pathname === '/app/tasks' ||
+    (location.pathname.startsWith('/app/tasks/') && location.pathname !== '/app/tasks/manage');
+
+  const isDocumentsActive = location.pathname.startsWith('/app/documents');
+  const isAnnouncementsActive =
+    location.pathname === '/app/announcements' ||
+    (location.pathname.startsWith('/app/announcements/') &&
+      location.pathname !== '/app/announcements/manage');
 
   const mainNavItems = [
     {
@@ -60,15 +66,17 @@ export const Sidebar = ({ isOpen, onClose, onShowModuleNotice }) => {
     },
     {
       name: 'Documents',
-      path: null,
+      path: '/app/documents',
       icon: FileText,
-      phase: 'Phase 10',
+      active: isDocumentsActive,
+      phase: null,
     },
     {
       name: 'Announcements',
-      path: null,
+      path: '/app/announcements',
       icon: Megaphone,
-      phase: 'Phase 10',
+      active: isAnnouncementsActive,
+      phase: null,
     },
     {
       name: 'Notifications',
@@ -108,6 +116,7 @@ export const Sidebar = ({ isOpen, onClose, onShowModuleNotice }) => {
   const isAttendanceManageActive = location.pathname === '/app/attendance/manage';
   const isLeaveManageActive = location.pathname === '/app/leave/manage';
   const isTasksManageActive = location.pathname === '/app/tasks/manage';
+  const isAnnouncementsManageActive = location.pathname === '/app/announcements/manage';
 
   const sidebarContent = (
     <div className="flex flex-col h-full bg-card border-r border-border text-card-foreground">
@@ -318,6 +327,28 @@ export const Sidebar = ({ isOpen, onClose, onShowModuleNotice }) => {
                   }`}
                 />
                 <span>Departments</span>
+              </div>
+            </Link>
+
+            {/* Announcement Management Route */}
+            <Link
+              to="/app/announcements/manage"
+              onClick={onClose}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                isAnnouncementsManageActive
+                  ? 'bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 font-semibold border border-teal-200/60 dark:border-teal-800/60'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-secondary/70'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Megaphone
+                  className={`w-4 h-4 transition-colors ${
+                    isAnnouncementsManageActive
+                      ? 'text-teal-600 dark:text-teal-400'
+                      : 'text-muted-foreground group-hover:text-foreground'
+                  }`}
+                />
+                <span>Announcements</span>
               </div>
             </Link>
           </div>

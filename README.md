@@ -149,6 +149,40 @@ WorkNest enforces role authorization on both backend endpoints and frontend rout
 | `PATCH` | `/api/departments/:id/status` | Admin | Activate or deactivate department (deactivation blocked if active employees remain) |
 | `PATCH` | `/api/departments/:id/manager` | Admin | Assign or remove department manager (requires active Manager or Admin user) |
 
+### 7. Document Vault (`/api/documents`)
+
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/documents` | Admin | Upload a new organizational/department document (`multipart/form-data`) with safe storage key |
+| `GET` | `/api/documents` | Private (All) | Scoped document repository with search, category, department, and expiration filters |
+| `GET` | `/api/documents/:id` | Private (Authorized) | Retrieve document metadata with strict RBAC permission verification |
+| `GET` | `/api/documents/:id/download` | Private (Authorized) | Secure binary stream download with auth check, path traversal prevention, and expiration guard |
+| `PATCH` | `/api/documents/:id` | Admin | Update document metadata, category, visibility, or expiration date |
+| `PATCH` | `/api/documents/:id/archive` | Admin | Archive a document to remove from standard employee listings |
+
+- **Storage & Security**: Clean abstraction layer storing files in `backend/uploads/` (git-ignored) with cryptographic opaque keys. Prevents path traversal and never exposes filesystem paths.
+- **Supported File Types**: PDF, Word (`.doc`, `.docx`), Excel (`.xls`, `.xlsx`), PowerPoint (`.ppt`, `.pptx`), Plain Text (`.txt`), Images (`.png`, `.jpg`, `.jpeg`). Maximum file size: 10 MB.
+- **Document Access & RBAC**:
+  - `EMPLOYEE`: View & download active, non-expired organization documents and own department documents.
+  - `MANAGER`: View & download organization documents and documents for managed departments.
+  - `ADMIN`: Full repository management (upload, edit, archive, download, view all).
+
+### 8. Company Announcements (`/api/announcements`)
+
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/announcements` | Admin, Manager | Create an announcement (Admin: Org/Dept; Manager: managed Department only) |
+| `GET` | `/api/announcements` | Private (All) | Paginated announcements feed (Employees: published/non-expired; Managers/Admins: manage queue) |
+| `GET` | `/api/announcements/:id` | Private (Authorized) | Retrieve full announcement details with audience and author metadata |
+| `PATCH` | `/api/announcements/:id` | Admin, Manager | Update draft announcement content and parameters |
+| `PATCH` | `/api/announcements/:id/publish` | Admin, Manager | Transition `DRAFT` &rarr; `PUBLISHED` with server-stamped publication date |
+| `PATCH` | `/api/announcements/:id/archive` | Admin, Manager | Transition `DRAFT`/`PUBLISHED` &rarr; `ARCHIVED` |
+
+- **Targeting & Delivery**:
+  - `ORGANIZATION`: Broadcasts to all active company staff.
+  - `DEPARTMENT`: Targeted specifically to active members of the selected department.
+- **Workflow & Expiration**: Structured state machine (`DRAFT` &rarr; `PUBLISHED` &rarr; `ARCHIVED`). Plain text content only (no HTML injection). Expired announcements automatically disappear from staff feeds without background cron jobs.
+
 ---
 
 ## Getting Started

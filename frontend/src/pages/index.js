@@ -13,3 +13,8 @@ export { LeaveManagePage } from './LeaveManagePage';
 export { TasksPage } from './TasksPage';
 export { TaskDetailPage } from './TaskDetailPage';
 export { TasksManagePage } from './TasksManagePage';
+export { DocumentsPage } from './DocumentsPage';
+export { AnnouncementsPage } from './AnnouncementsPage';
+export { AnnouncementDetailPage } from './AnnouncementDetailPage';
+export { AnnouncementsManagePage } from './AnnouncementsManagePage';
+

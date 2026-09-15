@@ -1,36 +1,36 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Clock, CalendarPlus, PlusCircle, FileText } from 'lucide-react';
-import { Button } from '../ui';
 
-export const QuickActions = ({ onActionClick }) => {
+export const QuickActions = () => {
   const actions = [
     {
       label: 'Log Attendance',
       subtext: 'Check-in / Check-out',
       icon: Clock,
-      phase: 'Phase 7',
-      name: 'Attendance Tracking',
+      path: '/app/attendance',
+      status: 'Live',
     },
     {
       label: 'Request Leave',
       subtext: 'Time-off application',
       icon: CalendarPlus,
-      phase: 'Phase 8',
-      name: 'Leave Management',
+      path: '/app/leave',
+      status: 'Live',
     },
     {
       label: 'My Open Tasks',
       subtext: 'Update assigned items',
       icon: PlusCircle,
-      phase: 'Phase 9',
-      name: 'Task Delegation',
+      path: '/app/tasks',
+      status: 'Live',
     },
     {
       label: 'Browse Documents',
       subtext: 'Company vault & policies',
       icon: FileText,
-      phase: 'Phase 10',
-      name: 'Document Management',
+      path: '/app/documents',
+      status: 'Live',
     },
   ];
 
@@ -50,18 +50,17 @@ export const QuickActions = ({ onActionClick }) => {
           const Icon = action.icon;
 
           return (
-            <button
+            <Link
               key={action.label}
-              type="button"
-              onClick={() => onActionClick && onActionClick(action.name, action.phase)}
+              to={action.path}
               className="p-3 rounded-xl border border-border bg-card hover:bg-secondary/60 hover:border-teal-500/40 text-left transition-all group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="w-8 h-8 rounded-lg bg-teal-50 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400 flex items-center justify-center group-hover:scale-105 transition-transform">
                   <Icon className="w-4 h-4" />
                 </div>
-                <span className="text-[10px] text-muted-foreground/80 font-mono bg-secondary px-1.5 py-0.5 rounded">
-                  {action.phase}
+                <span className="text-[10px] text-teal-700 dark:text-teal-400 font-medium bg-teal-50 dark:bg-teal-950/60 px-1.5 py-0.5 rounded border border-teal-200/50 dark:border-teal-800/50">
+                  {action.status}
                 </span>
               </div>
               <span className="text-xs font-semibold text-foreground block truncate">
@@ -70,7 +69,7 @@ export const QuickActions = ({ onActionClick }) => {
               <span className="text-[11px] text-muted-foreground block truncate">
                 {action.subtext}
               </span>
-            </button>
+            </Link>
           );
         })}
       </div>
@@ -79,3 +78,4 @@ export const QuickActions = ({ onActionClick }) => {
 };
 
 export default QuickActions;
+
