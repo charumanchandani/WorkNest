@@ -20,4 +20,4 @@ export { AnnouncementsManagePage } from './AnnouncementsManagePage';
 export { NotificationsPage } from './NotificationsPage';
 export { AnalyticsPage } from './AnalyticsPage';
 export { ReportsPage } from './ReportsPage';
-
+export { AIAssistantPage } from './AIAssistantPage';

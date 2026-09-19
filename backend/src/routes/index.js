@@ -12,6 +12,7 @@ import notificationRoutes from './notificationRoutes.js';
 import activityRoutes from './activityRoutes.js';
 import analyticsRoutes from './analyticsRoutes.js';
 import reportRoutes from './reportRoutes.js';
+import aiRoutes from './aiRoutes.js';
 
 const router = Router();
 
@@ -29,6 +30,7 @@ router.use('/notifications', notificationRoutes);
 router.use('/activities', activityRoutes);
 router.use('/analytics', analyticsRoutes);
 router.use('/reports', reportRoutes);
+router.use('/ai', aiRoutes);
 
 export default router;
 

@@ -19,6 +19,7 @@ import {
   ListTodo,
   BarChart3,
   FileSpreadsheet,
+  Sparkles,
 } from 'lucide-react';
 import { useAuth } from '../../hooks';
 import { Badge } from '../ui';
@@ -39,6 +40,7 @@ export const Sidebar = ({ isOpen, onClose, onShowModuleNotice }) => {
   const isNotificationsActive = location.pathname.startsWith('/app/notifications');
   const isReportsActive = location.pathname.startsWith('/app/reports');
   const isAnalyticsActive = location.pathname.startsWith('/app/analytics');
+  const isAIAssistantActive = location.pathname.startsWith('/app/ai-assistant');
 
   const mainNavItems = [
     {
@@ -46,6 +48,13 @@ export const Sidebar = ({ isOpen, onClose, onShowModuleNotice }) => {
       path: '/app',
       icon: LayoutDashboard,
       active: location.pathname === '/app',
+      phase: null,
+    },
+    {
+      name: 'AI Assistant',
+      path: '/app/ai-assistant',
+      icon: Sparkles,
+      active: isAIAssistantActive,
       phase: null,
     },
     {

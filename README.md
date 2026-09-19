@@ -243,6 +243,24 @@ WorkNest enforces role authorization on both backend endpoints and frontend rout
 - **Parameters**: `from`, `to`, `department`, `status`, `format` (`json` or `csv`).
 - **CSV Security**: Sanitizes leading formula characters (`=`, `+`, `-`, `@`, `\t`, `\r`) with single-quote escaping to prevent CSV spreadsheet injection (CWE-1236). Excludes all sensitive authentication credentials and tokens.
 
+### 13. AI Assistance Layer (`/api/ai`)
+
+WorkNest includes an optional, server-side AI assistance layer designed to synthesize workplace data, accelerate routine drafting, and provide operational productivity insights.
+
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/ai/status` | Private (All) | Retrieve server AI operational status, active provider, and model information |
+| `POST` | `/api/ai/tasks/:id/summary` | Private (Authorized) | Generate concise summaries, key points, blockers, and next steps for a specific task |
+| `POST` | `/api/ai/leave/draft` | Private (All) | Generate professional, context-aware leave request drafts with handover recommendations |
+| `POST` | `/api/ai/documents/:id/summary` | Private (Authorized) | Synthesize document metadata and plain-text contents (.txt, .md, .csv) with action items |
+| `POST` | `/api/ai/productivity/insight` | Private (All) | Generate role-scoped productivity observations, workload alerts, and recommendations |
+
+- **Security & Privacy Guardrails**:
+  - **Zero Key Exposure**: AI API keys (`AI_API_KEY`) remain strictly on the backend and are never sent to the browser or stored in frontend state.
+  - **Rate Limiting**: Built-in sliding-window rate limiter limits AI requests to 20 per minute per user (returns HTTP 429 when exceeded).
+  - **Non-Sensitive Profiling**: Focuses strictly on operational metrics (task counts, attendance rates, leave distribution) and never profiles health or personal user attributes.
+  - **Graceful Fallback**: When `AI_ENABLED=false` or when an external AI provider is unavailable, WorkNest falls back gracefully with deterministic local mock synthesis or clean 503 service advisories, preserving 100% of core workplace operations.
+
 ---
 
 ## Getting Started
@@ -313,6 +331,12 @@ MONGODB_URI=mongodb://localhost:27017/worknest
 JWT_SECRET=your_super_secret_jwt_key_change_in_production
 JWT_EXPIRES_IN=7d
 CLIENT_URL=http://localhost:5173
+
+# Optional AI Assistance Layer (Phase 13)
+AI_ENABLED=true
+AI_PROVIDER=mock       # 'mock' or 'gemini'
+AI_API_KEY=            # Optional Gemini API key
+AI_MODEL=gemini-1.5-flash
 ```
 
 ### Frontend (`frontend/.env.example`)

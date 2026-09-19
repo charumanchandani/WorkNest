@@ -9,4 +9,8 @@ export const ENV = {
   JWT_SECRET: process.env.JWT_SECRET || 'worknest_jwt_dev_secret_key_change_in_production',
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '7d',
   CLIENT_URL: process.env.CLIENT_URL || 'http://localhost:5173',
+  AI_ENABLED: process.env.AI_ENABLED === 'true',
+  AI_PROVIDER: process.env.AI_PROVIDER || 'mock',
+  AI_API_KEY: process.env.AI_API_KEY || '',
+  AI_MODEL: process.env.AI_MODEL || 'gemini-1.5-flash',
 };

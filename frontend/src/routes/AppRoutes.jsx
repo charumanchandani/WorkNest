@@ -23,6 +23,7 @@ import {
   NotificationsPage,
   AnalyticsPage,
   ReportsPage,
+  AIAssistantPage,
 } from '../pages';
 import { AppLayout } from '../layouts';
 import ProtectedRoute from './ProtectedRoute';
@@ -62,6 +63,9 @@ export const AppRoutes = () => {
         }
       >
         <Route index element={<EmployeeDashboard />} />
+
+        {/* Phase 13 AI Assistance Hub */}
+        <Route path="ai-assistant" element={<AIAssistantPage />} />
 
         {/* Phase 12 Analytics Dashboard */}
         <Route path="analytics" element={<AnalyticsPage />} />

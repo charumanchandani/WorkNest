@@ -8,9 +8,12 @@ import {
   CheckSquare,
   Activity,
   AlertCircle,
+  Sparkles,
+  Lightbulb,
+  CheckCircle2,
 } from 'lucide-react';
 import { useAuth } from '../hooks';
-import { Alert, Spinner, Badge } from '../components/ui';
+import { Alert, Spinner, Badge, Button } from '../components/ui';
 import {
   AnalyticsFilterBar,
   MetricCard,
@@ -21,6 +24,7 @@ import {
   EmployeeAnalyticsSection,
 } from '../components/analytics';
 import analyticsService from '../services/analyticsService';
+import aiService from '../services/aiService';
 
 export const AnalyticsPage = () => {
   const { user } = useAuth();
@@ -44,6 +48,11 @@ export const AnalyticsPage = () => {
   const [taskData, setTaskData] = useState(null);
   const [departmentData, setDepartmentData] = useState(null);
   const [employeeData, setEmployeeData] = useState(null);
+
+  // AI Insight states
+  const [aiInsight, setAiInsight] = useState(null);
+  const [isGeneratingInsight, setIsGeneratingInsight] = useState(false);
+  const [aiInsightError, setAiInsightError] = useState('');
 
   // Loading & error states
   const [loading, setLoading] = useState(false);
@@ -126,6 +135,25 @@ export const AnalyticsPage = () => {
     fetchTabData(activeTab);
   };
 
+  const handleGenerateAIInsight = async () => {
+    try {
+      setIsGeneratingInsight(true);
+      setAiInsightError('');
+      const res = await aiService.getProductivityInsight({
+        from: filters.from || undefined,
+        to: filters.to || undefined,
+        departmentId: filters.department || undefined,
+      });
+      if (res?.data?.data) {
+        setAiInsight(res.data.data);
+      }
+    } catch (err) {
+      setAiInsightError(err.formattedMessage || 'Failed to generate productivity insight.');
+    } finally {
+      setIsGeneratingInsight(false);
+    }
+  };
+
   const tabs = [
     { id: 'overview', label: 'Executive Overview', icon: TrendingUp },
     { id: 'attendance', label: 'Attendance', icon: Clock },
@@ -169,6 +197,21 @@ export const AnalyticsPage = () => {
             Real-time workplace metrics, operational trends, and workforce performance.
           </p>
         </div>
+
+        <div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleGenerateAIInsight}
+            isLoading={isGeneratingInsight}
+            disabled={isGeneratingInsight}
+            className="text-xs border-purple-300 dark:border-purple-700 text-purple-700 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900/40"
+          >
+            <Sparkles className="w-3.5 h-3.5 mr-1.5" />
+            {aiInsight ? 'Refresh AI Insight' : 'Generate AI Insight'}
+          </Button>
+        </div>
       </div>
 
       {/* Filter Toolbar */}
@@ -185,6 +228,14 @@ export const AnalyticsPage = () => {
         <Alert variant="destructive">
           <AlertCircle className="w-4 h-4 mr-2 shrink-0" />
           <span>{error}</span>
+        </Alert>
+      )}
+
+      {/* AI Insight Error Alert */}
+      {aiInsightError && (
+        <Alert variant="destructive" onDismiss={() => setAiInsightError('')}>
+          <AlertCircle className="w-4 h-4 mr-2 shrink-0" />
+          <span>{aiInsightError}</span>
         </Alert>
       )}
 
@@ -222,6 +273,68 @@ export const AnalyticsPage = () => {
           {/* Tab 1: Executive Overview */}
           {activeTab === 'overview' && (
             <div className="space-y-6">
+              {/* AI Productivity Insight Result Box */}
+              {aiInsight && (
+                <div className="p-4 rounded-xl bg-purple-50/70 dark:bg-purple-950/30 border border-purple-200/80 dark:border-purple-800/70 space-y-3 shadow-subtle animate-in fade-in duration-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                      <span className="text-xs font-bold text-purple-800 dark:text-purple-200 uppercase tracking-wider">
+                        AI Productivity & Operations Synthesis
+                      </span>
+                    </div>
+                    <Badge variant="outline" size="sm">
+                      Scope: {aiInsight.scope || 'Operational'}
+                    </Badge>
+                  </div>
+
+                  <p className="text-xs text-foreground leading-relaxed bg-background/80 p-3 rounded-lg border border-purple-100 dark:border-purple-900/50">
+                    {aiInsight.summary}
+                  </p>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                    {aiInsight.observations?.length > 0 && (
+                      <div className="space-y-1.5 bg-background/50 p-3 rounded-lg border border-border/50">
+                        <span className="text-[11px] font-bold text-foreground flex items-center gap-1.5">
+                          <Lightbulb className="w-3.5 h-3.5 text-amber-500" />
+                          Key Observations
+                        </span>
+                        <ul className="space-y-1">
+                          {aiInsight.observations.map((obs, idx) => (
+                            <li key={idx} className="text-xs text-muted-foreground flex items-start gap-1.5">
+                              <span className="text-purple-600 font-bold">•</span>
+                              <span>{obs}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {aiInsight.recommendations?.length > 0 && (
+                      <div className="space-y-1.5 bg-background/50 p-3 rounded-lg border border-border/50">
+                        <span className="text-[11px] font-bold text-foreground flex items-center gap-1.5">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+                          Actionable Recommendations
+                        </span>
+                        <ul className="space-y-1">
+                          {aiInsight.recommendations.map((rec, idx) => (
+                            <li key={idx} className="text-xs text-muted-foreground flex items-start gap-1.5">
+                              <span className="text-teal-600 dark:text-teal-400 font-bold">•</span>
+                              <span>{rec}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+
+                  {aiInsight.workloadAlerts?.length > 0 && (
+                    <div className="p-2.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 text-xs text-rose-700 dark:text-rose-300">
+                      <strong>Operational Alert:</strong> {aiInsight.workloadAlerts.join('; ')}
+                    </div>
+                  )}
+                </div>
+              )}
               {/* Overview Metric Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* 1. Workforce / Attendance */}

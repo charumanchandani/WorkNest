@@ -7,8 +7,11 @@ import {
   CalendarCheck,
   Palmtree,
   Info,
+  Sparkles,
+  Check,
 } from 'lucide-react';
 import { Modal, Button, Input, Select, Alert, Badge } from '../ui';
+import aiService from '../../services/aiService';
 
 // Helper to calculate working days (Mon-Fri) on clientside preview
 const getClientWorkingDays = (startDateStr, endDateStr) => {
@@ -46,6 +49,11 @@ export const LeaveApplyModal = ({
   const [reason, setReason] = useState('');
   const [clientDays, setClientDays] = useState(0);
 
+  // AI draft assistance states
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  const [aiDraftResult, setAiDraftResult] = useState(null);
+  const [aiError, setAiError] = useState('');
+
   // Recalculate working days whenever dates change
   useEffect(() => {
     if (startDate && endDate) {
@@ -65,6 +73,9 @@ export const LeaveApplyModal = ({
       setEndDate('');
       setReason('');
       setClientDays(0);
+      setIsGeneratingAI(false);
+      setAiDraftResult(null);
+      setAiError('');
       if (onClearError) onClearError();
     }
   }, [isOpen, onClearError]);
@@ -106,6 +117,41 @@ export const LeaveApplyModal = ({
       endDate: endDate || startDate,
       reason: reason.trim(),
     });
+  };
+
+  const handleGenerateAIDraft = async () => {
+    if (!startDate) {
+      setAiError('Please select a start date first.');
+      return;
+    }
+    try {
+      setIsGeneratingAI(true);
+      setAiError('');
+      const res = await aiService.generateLeaveDraft({
+        leaveType,
+        startDate,
+        endDate: endDate || startDate,
+        context: reason.trim() || undefined,
+        tone: 'professional',
+      });
+      if (res?.data?.data) {
+        setAiDraftResult(res.data.data);
+      }
+    } catch (err) {
+      setAiError(err.formattedMessage || 'AI service currently unavailable.');
+    } finally {
+      setIsGeneratingAI(false);
+    }
+  };
+
+  const handleApplyAIDraft = () => {
+    if (!aiDraftResult) return;
+    let fullReason = aiDraftResult.draftReason || '';
+    if (aiDraftResult.handoverNotes) {
+      fullReason += ` Handover: ${aiDraftResult.handoverNotes}`;
+    }
+    setReason(fullReason.slice(0, 500));
+    setAiDraftResult(null);
   };
 
   return (
@@ -219,11 +265,58 @@ export const LeaveApplyModal = ({
           </div>
         )}
 
-        {/* 4. Reason Text Area */}
+        {/* 4. Reason Text Area with AI Assistance */}
         <div className="space-y-1.5">
-          <label htmlFor="leave-reason" className="text-xs font-semibold text-foreground">
-            Reason / Justification <span className="text-rose-500">*</span>
-          </label>
+          <div className="flex items-center justify-between">
+            <label htmlFor="leave-reason" className="text-xs font-semibold text-foreground">
+              Reason / Justification <span className="text-rose-500">*</span>
+            </label>
+            <button
+              type="button"
+              onClick={handleGenerateAIDraft}
+              disabled={isGeneratingAI || isSubmitting || !startDate}
+              className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title={!startDate ? 'Select dates first' : 'Generate professional reason with AI'}
+            >
+              <Sparkles className={`w-3.5 h-3.5 ${isGeneratingAI ? 'animate-spin' : ''}`} />
+              <span>{isGeneratingAI ? 'Drafting...' : 'Draft with AI'}</span>
+            </button>
+          </div>
+
+          {aiError && (
+            <div className="text-[11px] text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 p-2 rounded-lg border border-rose-200 dark:border-rose-800/50">
+              {aiError}
+            </div>
+          )}
+
+          {/* AI Draft Suggestion Box */}
+          {aiDraftResult && (
+            <div className="p-3 rounded-xl bg-purple-50/70 dark:bg-purple-950/30 border border-purple-200/70 dark:border-purple-800/60 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-purple-700 dark:text-purple-300 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  AI Suggested Reason
+                </span>
+                <button
+                  type="button"
+                  onClick={handleApplyAIDraft}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-purple-600 text-white hover:bg-purple-700 transition-colors shadow-subtle"
+                >
+                  <Check className="w-3 h-3" />
+                  Use This Reason
+                </button>
+              </div>
+              <p className="text-xs text-foreground bg-background/80 p-2 rounded-lg border border-purple-100 dark:border-purple-900/50 leading-relaxed">
+                {aiDraftResult.draftReason}
+              </p>
+              {aiDraftResult.handoverNotes && (
+                <p className="text-[11px] text-muted-foreground">
+                  <strong className="text-foreground">Suggested Handover:</strong> {aiDraftResult.handoverNotes}
+                </p>
+              )}
+            </div>
+          )}
+
           <textarea
             id="leave-reason"
             rows={3}
