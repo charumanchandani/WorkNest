@@ -17,6 +17,8 @@ import {
   CalendarCheck2,
   FileCheck2,
   ListTodo,
+  BarChart3,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { useAuth } from '../../hooks';
 import { Badge } from '../ui';
@@ -35,6 +37,8 @@ export const Sidebar = ({ isOpen, onClose, onShowModuleNotice }) => {
     (location.pathname.startsWith('/app/announcements/') &&
       location.pathname !== '/app/announcements/manage');
   const isNotificationsActive = location.pathname.startsWith('/app/notifications');
+  const isReportsActive = location.pathname.startsWith('/app/reports');
+  const isAnalyticsActive = location.pathname.startsWith('/app/analytics');
 
   const mainNavItems = [
     {
@@ -84,6 +88,13 @@ export const Sidebar = ({ isOpen, onClose, onShowModuleNotice }) => {
       path: '/app/notifications',
       icon: Bell,
       active: isNotificationsActive,
+      phase: null,
+    },
+    {
+      name: 'Reports',
+      path: '/app/reports',
+      icon: FileSpreadsheet,
+      active: isReportsActive,
       phase: null,
     },
   ];
@@ -221,6 +232,28 @@ export const Sidebar = ({ isOpen, onClose, onShowModuleNotice }) => {
             <span className="px-3 text-[10px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
               {isAdmin ? 'Organization Admin' : 'Team Management'}
             </span>
+
+            {/* Analytics Dashboard Route */}
+            <Link
+              to="/app/analytics"
+              onClick={onClose}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                isAnalyticsActive
+                  ? 'bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 font-semibold border border-teal-200/60 dark:border-teal-800/60'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-secondary/70'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <BarChart3
+                  className={`w-4 h-4 transition-colors ${
+                    isAnalyticsActive
+                      ? 'text-teal-600 dark:text-teal-400'
+                      : 'text-muted-foreground group-hover:text-foreground'
+                  }`}
+                />
+                <span>Analytics</span>
+              </div>
+            </Link>
 
             {/* Task Management Route */}
             <Link

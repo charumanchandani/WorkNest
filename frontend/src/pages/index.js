@@ -18,4 +18,6 @@ export { AnnouncementsPage } from './AnnouncementsPage';
 export { AnnouncementDetailPage } from './AnnouncementDetailPage';
 export { AnnouncementsManagePage } from './AnnouncementsManagePage';
 export { NotificationsPage } from './NotificationsPage';
+export { AnalyticsPage } from './AnalyticsPage';
+export { ReportsPage } from './ReportsPage';
 

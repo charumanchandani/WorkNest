@@ -11,11 +11,11 @@ import {
   TasksWidget,
   ActivityFeed,
 } from '../components/app';
-import { dashboardMockData } from '../constants/dashboardData';
 import attendanceService from '../services/attendanceService';
 import leaveService from '../services/leaveService';
 import taskService from '../services/taskService';
 import activityService from '../services/activityService';
+import analyticsService from '../services/analyticsService';
 
 export const EmployeeDashboard = () => {
   const { user } = useAuth();
@@ -39,6 +39,9 @@ export const EmployeeDashboard = () => {
   const [activities, setActivities] = useState([]);
   const [activitiesLoading, setActivitiesLoading] = useState(false);
   const [activitiesError, setActivitiesError] = useState('');
+
+  // Real overview analytics state
+  const [overviewMetrics, setOverviewMetrics] = useState(null);
 
   const fetchActivities = async () => {
     try {
@@ -94,10 +97,22 @@ export const EmployeeDashboard = () => {
       }
     };
 
+    const fetchOverviewMetrics = async () => {
+      try {
+        const res = await analyticsService.getOverviewAnalytics();
+        if (res?.data) {
+          setOverviewMetrics(res.data.data || res.data);
+        }
+      } catch {
+        // Non-blocking fallback
+      }
+    };
+
     fetchTodayAttendance();
     fetchLeaveBalance();
     fetchMyTasks();
     fetchActivities();
+    fetchOverviewMetrics();
   }, []);
 
   // Extract first name
@@ -140,14 +155,14 @@ export const EmployeeDashboard = () => {
         <div className="flex items-center gap-2">
           <div className="px-3 py-1.5 rounded-lg bg-teal-50 dark:bg-teal-950/50 border border-teal-200/70 dark:border-teal-800/70 flex items-center gap-2 text-xs text-teal-800 dark:text-teal-300">
             <Sparkles className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />
-            <span className="font-medium">Phase 9 Live</span>
+            <span className="font-medium">Phase 12 Live</span>
           </div>
         </div>
       </div>
 
-      {/* 2. Key Metrics Row (4 KPI Summary Cards) */}
+      {/* 2. Key Metrics Row (4 KPI Summary Cards with Real Analytics) */}
       <DashboardSummaryCards
-        metrics={dashboardMockData.metrics}
+        overview={overviewMetrics}
         onQuickAction={onShowModuleNotice}
       />
 

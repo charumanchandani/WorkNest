@@ -37,13 +37,13 @@ WorkNest follows a decoupled client-server architecture with clear separation of
 WorkNest/
 ├── frontend/                # Client application (React + Vite + Tailwind CSS)
 │   ├── src/
-│   │   ├── components/      # UI components, Landing sections, App Shell, Employees, Departments, Attendance, Leave, Tasks
+│   │   ├── components/      # UI components, App Shell, Employees, Departments, Attendance, Leave, Tasks, Documents, Announcements, Notifications, Analytics, Reports
 │   │   ├── layouts/         # AppLayout (Sidebar, Topbar, Content Outlet)
-│   │   ├── pages/           # LandingPage, LoginPage, RegisterPage, EmployeeDashboard, EmployeesPage, EmployeeDetailPage, DepartmentsPage, DepartmentDetailPage, AttendancePage, AttendanceManagePage, LeavePage, LeaveManagePage, TasksPage, TaskDetailPage, TasksManagePage
+│   │   ├── pages/           # LandingPage, LoginPage, RegisterPage, EmployeeDashboard, EmployeesPage, EmployeeDetailPage, DepartmentsPage, DepartmentDetailPage, AttendancePage, AttendanceManagePage, LeavePage, LeaveManagePage, TasksPage, TaskDetailPage, TasksManagePage, DocumentsPage, AnnouncementsPage, NotificationsPage, AnalyticsPage, ReportsPage
 │   │   ├── routes/          # AppRoutes, ProtectedRoute, PublicOnlyRoute
 │   │   ├── context/         # AuthContext, ThemeContext
 │   │   ├── hooks/           # useAuth, useTheme
-│   │   ├── services/        # api, authService, employeeService, departmentService, attendanceService, leaveService, taskService
+│   │   ├── services/        # api, authService, employeeService, departmentService, attendanceService, leaveService, taskService, documentService, announcementService, notificationService, activityService, analyticsService
 │   │   ├── utils/           # Helper functions & formatting utilities
 │   │   ├── constants/       # App constants and configuration tokens
 │   │   └── assets/          # Static assets and icons
@@ -53,12 +53,12 @@ WorkNest/
 │   ├── src/
 │   │   ├── config/          # Database connection & environment configuration
 │   │   ├── constants/       # attendance, leave, task constants (Timezone: Asia/Kolkata, quotas, priorities, statuses)
-│   │   ├── controllers/     # authController, employeeController, departmentController, attendanceController, leaveController, taskController, healthController
-│   │   ├── middleware/      # authMiddleware (protect), roleMiddleware (authorizeRoles), errorHandler
-│   │   ├── models/          # User, Department, Attendance, Leave, LeaveBalance, Task
-│   │   ├── routes/          # authRoutes, employeeRoutes, departmentRoutes, attendanceRoutes, leaveRoutes, taskRoutes, healthRoutes
-│   │   ├── scripts/         # seedUsers.js (development test accounts & standard departments)
-│   │   ├── services/        # employeeService, departmentService, attendanceService, leaveService, taskService
+│   │   ├── controllers/     # authController, employeeController, departmentController, attendanceController, leaveController, taskController, documentController, announcementController, notificationController, activityController, analyticsController, reportController, healthController
+│   │   ├── middleware/      # authMiddleware (protect), roleMiddleware (authorizeRoles), uploadMiddleware, errorHandler
+│   │   ├── models/          # User, Department, Attendance, Leave, LeaveBalance, Task, Document, Announcement, Notification, Activity
+│   │   ├── routes/          # authRoutes, employeeRoutes, departmentRoutes, attendanceRoutes, leaveRoutes, taskRoutes, documentRoutes, announcementRoutes, notificationRoutes, activityRoutes, analyticsRoutes, reportRoutes, healthRoutes
+│   │   ├── scripts/         # seedUsers.js, testPhase12.js
+│   │   ├── services/        # employeeService, departmentService, attendanceService, leaveService, taskService, documentService, announcementService, notificationService, activityService, analyticsService
 │   │   └── utils/           # token, responseHandler
 │   ├── server.js            # Server entrypoint & Express bootstrapping
 │   └── package.json
@@ -210,6 +210,38 @@ WorkNest enforces role authorization on both backend endpoints and frontend rout
   - `MANAGER`: View team activities across managed departments in addition to personal logs.
   - `ADMIN`: Organization-wide comprehensive audit and operational timeline.
 - **Security & Privacy**: Automatically strips passwords, tokens, full document payloads, and sensitive credentials from activity logs.
+
+### 11. Workplace Analytics & Insights (`/api/analytics`)
+
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/analytics/overview` | Private (All) | Role-scoped executive overview KPIs (workforce, today's attendance, pending leaves, task pipeline, activity count) |
+| `GET` | `/api/analytics/attendance` | Private (All) | Attendance metrics, total/average hours, rate, and daily trend time-series |
+| `GET` | `/api/analytics/leave` | Private (All) | Leave requests, approved working days, category distribution, and department usage |
+| `GET` | `/api/analytics/tasks` | Private (All) | Task turnaround timings, priority breakdown, completion rate, and department workloads |
+| `GET` | `/api/analytics/employees` | Admin, Manager | Staff distribution, active/inactive headcount, role allocation, and recent joinings |
+| `GET` | `/api/analytics/departments` | Admin, Manager | Departmental workload, completion rates, today's attendance rate, and approved leave usage |
+
+- **Date Filtering**: Supports `from` and `to` date query parameters (defaults to the current calendar month).
+- **RBAC Scoping**:
+  - `EMPLOYEE`: Personal attendance, leave, task metrics, and personal activity counts only.
+  - `MANAGER`: Scoped strictly to managed team members and assigned departments.
+  - `ADMIN`: Full enterprise-wide organizational analytics.
+
+### 12. Operational Reports & Data Export (`/api/reports`)
+
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/reports/:type` | Private (All) | Generate verified operational reports in JSON or CSV format |
+
+- **Supported Report Types**:
+  1. `attendance`: Daily clock-in/out stamps, worked hours, and status classifications.
+  2. `leave`: Approved and pending leave requests, total days, reasons, and review notes.
+  3. `tasks`: Assignment rosters, priority ratings, due dates, overdue statuses, and completion timestamps.
+  4. `employees`: Staff directory, job titles, department assignments, and hire dates (Admin & Manager only).
+  5. `departments`: Headcounts, leadership, task completion rates, and attendance rates (Admin & Manager only).
+- **Parameters**: `from`, `to`, `department`, `status`, `format` (`json` or `csv`).
+- **CSV Security**: Sanitizes leading formula characters (`=`, `+`, `-`, `@`, `\t`, `\r`) with single-quote escaping to prevent CSV spreadsheet injection (CWE-1236). Excludes all sensitive authentication credentials and tokens.
 
 ---
 

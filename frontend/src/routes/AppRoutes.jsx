@@ -21,6 +21,8 @@ import {
   AnnouncementDetailPage,
   AnnouncementsManagePage,
   NotificationsPage,
+  AnalyticsPage,
+  ReportsPage,
 } from '../pages';
 import { AppLayout } from '../layouts';
 import ProtectedRoute from './ProtectedRoute';
@@ -60,6 +62,12 @@ export const AppRoutes = () => {
         }
       >
         <Route index element={<EmployeeDashboard />} />
+
+        {/* Phase 12 Analytics Dashboard */}
+        <Route path="analytics" element={<AnalyticsPage />} />
+
+        {/* Phase 12 Operational Reports */}
+        <Route path="reports" element={<ReportsPage />} />
 
         {/* Phase 11 In-App Notifications Center */}
         <Route path="notifications" element={<NotificationsPage />} />
