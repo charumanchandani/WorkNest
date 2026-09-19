@@ -21,3 +21,5 @@ export { NotificationsPage } from './NotificationsPage';
 export { AnalyticsPage } from './AnalyticsPage';
 export { ReportsPage } from './ReportsPage';
 export { AIAssistantPage } from './AIAssistantPage';
+export { ProfilePage } from './ProfilePage';
+export { SettingsPage } from './SettingsPage';

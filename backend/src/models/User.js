@@ -96,6 +96,14 @@ const userSchema = new mongoose.Schema(
       default: true,
       index: true,
     },
+    notificationPreferences: {
+      taskAssignments: { type: Boolean, default: true },
+      taskUpdates: { type: Boolean, default: true },
+      leaveUpdates: { type: Boolean, default: true },
+      announcements: { type: Boolean, default: true },
+      documents: { type: Boolean, default: true },
+      system: { type: Boolean, default: true },
+    },
   },
   {
     timestamps: true,
@@ -180,6 +188,8 @@ userSchema.methods.toSafeObject = function () {
     }
   }
 
+  const prefs = this.notificationPreferences || {};
+
   return {
     id: this._id.toString(),
     employeeId: this.employeeId,
@@ -195,6 +205,14 @@ userSchema.methods.toSafeObject = function () {
     department: deptData,
     status: this.status || (this.isActive ? 'ACTIVE' : 'INACTIVE'),
     isActive: this.isActive,
+    notificationPreferences: {
+      taskAssignments: prefs.taskAssignments !== false,
+      taskUpdates: prefs.taskUpdates !== false,
+      leaveUpdates: prefs.leaveUpdates !== false,
+      announcements: prefs.announcements !== false,
+      documents: prefs.documents !== false,
+      system: prefs.system !== false,
+    },
     createdAt: this.createdAt,
     updatedAt: this.updatedAt,
   };

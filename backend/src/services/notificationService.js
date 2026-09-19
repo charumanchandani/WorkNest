@@ -1,11 +1,40 @@
 import mongoose from 'mongoose';
 import Notification from '../models/Notification.js';
 import User from '../models/User.js';
-import { NOTIFICATION_TYPE_LIST } from '../constants/notification.js';
+import { NOTIFICATION_TYPE, NOTIFICATION_TYPE_LIST } from '../constants/notification.js';
+
+/**
+ * Checks if a specific notification category is enabled for a user
+ */
+const isNotificationEnabledForUser = (userDoc, type) => {
+  if (!userDoc || !userDoc.notificationPreferences) return true;
+  const prefs = userDoc.notificationPreferences;
+
+  switch (type) {
+    case NOTIFICATION_TYPE.TASK_ASSIGNED:
+      return prefs.taskAssignments !== false;
+    case NOTIFICATION_TYPE.TASK_STATUS_CHANGED:
+    case NOTIFICATION_TYPE.TASK_COMPLETED:
+      return prefs.taskUpdates !== false;
+    case NOTIFICATION_TYPE.LEAVE_SUBMITTED:
+    case NOTIFICATION_TYPE.LEAVE_APPROVED:
+    case NOTIFICATION_TYPE.LEAVE_REJECTED:
+    case NOTIFICATION_TYPE.LEAVE_CANCELLED:
+      return prefs.leaveUpdates !== false;
+    case NOTIFICATION_TYPE.ANNOUNCEMENT_PUBLISHED:
+      return prefs.announcements !== false;
+    case NOTIFICATION_TYPE.DOCUMENT_ADDED:
+      return prefs.documents !== false;
+    case NOTIFICATION_TYPE.ATTENDANCE_REMINDER:
+      return prefs.system !== false;
+    default:
+      return true;
+  }
+};
 
 export const notificationService = {
   /**
-   * Creates a single notification with deduplication safeguard
+   * Creates a single notification with deduplication safeguard and preference enforcement
    */
   async createNotification({
     recipient,
@@ -21,9 +50,14 @@ export const notificationService = {
     const recipientId = recipient._id ? recipient._id : recipient;
     if (!mongoose.Types.ObjectId.isValid(recipientId)) return null;
 
-    // Verify recipient is active
-    const recipientUser = await User.findById(recipientId).select('isActive');
+    // Verify recipient is active and check notification preferences
+    const recipientUser = await User.findById(recipientId).select('isActive notificationPreferences');
     if (!recipientUser || !recipientUser.isActive) return null;
+
+    // Respect user's notification preferences
+    if (!isNotificationEnabledForUser(recipientUser, type)) {
+      return null;
+    }
 
     // Deduplication check: prevent identical notifications within last 10 seconds
     if (entityId && type) {
@@ -55,11 +89,31 @@ export const notificationService = {
   },
 
   /**
-   * Batch creates notifications for multiple recipients
+   * Batch creates notifications for multiple recipients respecting preferences
    */
   async createNotifications(notificationList = []) {
     if (!Array.isArray(notificationList) || notificationList.length === 0) {
       return [];
+    }
+
+    const recipientIds = [];
+    for (const item of notificationList) {
+      const rId = item.recipient?._id ? item.recipient._id : item.recipient;
+      if (rId && mongoose.Types.ObjectId.isValid(rId)) {
+        recipientIds.push(rId);
+      }
+    }
+
+    if (recipientIds.length === 0) return [];
+
+    const users = await User.find({
+      _id: { $in: recipientIds },
+      isActive: true,
+    }).select('_id isActive notificationPreferences');
+
+    const userMap = new Map();
+    for (const u of users) {
+      userMap.set(u._id.toString(), u);
     }
 
     const validDocs = [];
@@ -69,6 +123,14 @@ export const notificationService = {
 
       const recipientId = item.recipient._id ? item.recipient._id : item.recipient;
       if (!mongoose.Types.ObjectId.isValid(recipientId)) continue;
+
+      const userDoc = userMap.get(recipientId.toString());
+      if (!userDoc || !userDoc.isActive) continue;
+
+      // Check preference for this notification category
+      if (!isNotificationEnabledForUser(userDoc, item.type)) {
+        continue;
+      }
 
       validDocs.push({
         recipient: recipientId,

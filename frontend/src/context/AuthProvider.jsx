@@ -54,6 +54,11 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Synchronize local user state after profile updates
+  const updateUser = (updatedUserData) => {
+    setUser((prev) => (prev ? { ...prev, ...updatedUserData } : updatedUserData));
+  };
+
   const value = {
     user,
     loading,
@@ -62,6 +67,7 @@ export const AuthProvider = ({ children }) => {
     register,
     logout,
     checkAuth,
+    updateUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

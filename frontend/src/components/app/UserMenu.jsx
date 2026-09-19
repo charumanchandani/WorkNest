@@ -11,7 +11,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../hooks';
 import { Badge } from '../ui';
 
-export const UserMenu = ({ onShowModuleNotice }) => {
+export const UserMenu = () => {
   const { user, logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef(null);
@@ -51,13 +51,6 @@ export const UserMenu = ({ onShowModuleNotice }) => {
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [isOpen]);
-
-  const handlePlaceholderClick = (moduleName, phase) => {
-    setIsOpen(false);
-    if (onShowModuleNotice) {
-      onShowModuleNotice(moduleName, phase);
-    }
-  };
 
   return (
     <div className="relative" ref={menuRef}>
@@ -108,31 +101,29 @@ export const UserMenu = ({ onShowModuleNotice }) => {
           </div>
 
           {/* Menu Options */}
-          <button
-            type="button"
+          <Link
+            to="/app/profile"
+            onClick={() => setIsOpen(false)}
             role="menuitem"
-            onClick={() => handlePlaceholderClick('My Profile', 'Phase 14')}
             className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
           >
             <div className="flex items-center gap-2">
               <User className="w-4 h-4 text-muted-foreground" />
               <span>Profile Information</span>
             </div>
-            <span className="text-[10px] text-muted-foreground/80 font-mono">Phase 14</span>
-          </button>
+          </Link>
 
-          <button
-            type="button"
+          <Link
+            to="/app/settings"
+            onClick={() => setIsOpen(false)}
             role="menuitem"
-            onClick={() => handlePlaceholderClick('Settings', 'Phase 14')}
             className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
           >
             <div className="flex items-center gap-2">
               <Settings className="w-4 h-4 text-muted-foreground" />
               <span>Account Settings</span>
             </div>
-            <span className="text-[10px] text-muted-foreground/80 font-mono">Phase 14</span>
-          </button>
+          </Link>
 
           <Link
             to="/"

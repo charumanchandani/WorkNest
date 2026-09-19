@@ -261,6 +261,25 @@ WorkNest includes an optional, server-side AI assistance layer designed to synth
   - **Non-Sensitive Profiling**: Focuses strictly on operational metrics (task counts, attendance rates, leave distribution) and never profiles health or personal user attributes.
   - **Graceful Fallback**: When `AI_ENABLED=false` or when an external AI provider is unavailable, WorkNest falls back gracefully with deterministic local mock synthesis or clean 503 service advisories, preserving 100% of core workplace operations.
 
+### 14. User Profile & Settings (`/api/profile`)
+
+WorkNest provides user profile management, account settings, credential security controls, and granular in-app notification preferences across all roles (`EMPLOYEE`, `MANAGER`, `ADMIN`).
+
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/profile` | Private (All) | Retrieve safe authenticated user profile, department data, and notification preferences |
+| `PATCH` | `/api/profile` | Private (All) | Update personal contact details (whitelisted fields: `firstName`, `lastName`, `phone`, `location`) |
+| `POST` | `/api/profile/change-password` | Private (All) | Change password with strong policy enforcement and seamless session cookie refresh |
+| `GET` | `/api/profile/preferences` | Private (All) | Retrieve in-app notification category preferences |
+| `PATCH` | `/api/profile/preferences` | Private (All) | Update whitelisted notification preference toggles |
+
+- **Security & Mass-Assignment Protection**:
+  - **Identity Derivation**: User identity is derived strictly from verified JWT cookie sessions (`req.user._id`), never from request bodies.
+  - **Restricted Fields**: Self-editing of `role`, `department`, `employeeId`, `account status`, `isActive`, or `joiningDate` is strictly prohibited.
+  - **Password Security Policy**: Minimum 8 characters, at least one uppercase letter, one lowercase letter, and one number. Validates current password via bcrypt and rejects identical current/new passwords.
+  - **Notification Filtering**: Notification generation respects user preference categories (`taskAssignments`, `taskUpdates`, `leaveUpdates`, `announcements`, `documents`, `system`).
+  - **Appearance Customization**: Seamless Light, Dark, and System Default theme support with automatic OS scheme synchronization.
+
 ---
 
 ## Getting Started

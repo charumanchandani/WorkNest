@@ -13,6 +13,7 @@ import activityRoutes from './activityRoutes.js';
 import analyticsRoutes from './analyticsRoutes.js';
 import reportRoutes from './reportRoutes.js';
 import aiRoutes from './aiRoutes.js';
+import profileRoutes from './profileRoutes.js';
 
 const router = Router();
 
@@ -31,6 +32,7 @@ router.use('/activities', activityRoutes);
 router.use('/analytics', analyticsRoutes);
 router.use('/reports', reportRoutes);
 router.use('/ai', aiRoutes);
+router.use('/profile', profileRoutes);
 
 export default router;
 

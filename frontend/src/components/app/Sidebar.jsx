@@ -41,6 +41,8 @@ export const Sidebar = ({ isOpen, onClose, onShowModuleNotice }) => {
   const isReportsActive = location.pathname.startsWith('/app/reports');
   const isAnalyticsActive = location.pathname.startsWith('/app/analytics');
   const isAIAssistantActive = location.pathname.startsWith('/app/ai-assistant');
+  const isProfileActive = location.pathname.startsWith('/app/profile');
+  const isSettingsActive = location.pathname.startsWith('/app/settings');
 
   const mainNavItems = [
     {
@@ -404,33 +406,47 @@ export const Sidebar = ({ isOpen, onClose, onShowModuleNotice }) => {
             Account & System
           </span>
 
-          <button
-            type="button"
-            onClick={() => onShowModuleNotice && onShowModuleNotice('Profile Details', 'Phase 14')}
-            className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/70 transition-colors"
+          <Link
+            to="/app/profile"
+            onClick={onClose}
+            className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+              isProfileActive
+                ? 'bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 font-semibold border border-teal-200/60 dark:border-teal-800/60'
+                : 'text-muted-foreground hover:text-foreground hover:bg-secondary/70'
+            }`}
           >
             <div className="flex items-center gap-2.5">
-              <User className="w-4 h-4 text-muted-foreground" />
+              <User
+                className={`w-4 h-4 transition-colors ${
+                  isProfileActive
+                    ? 'text-teal-600 dark:text-teal-400'
+                    : 'text-muted-foreground group-hover:text-foreground'
+                }`}
+              />
               <span>My Profile</span>
             </div>
-            <span className="text-[10px] text-muted-foreground/80 bg-secondary/80 px-1.5 py-0.5 rounded font-mono">
-              Phase 14
-            </span>
-          </button>
+          </Link>
 
-          <button
-            type="button"
-            onClick={() => onShowModuleNotice && onShowModuleNotice('Settings', 'Phase 14')}
-            className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/70 transition-colors"
+          <Link
+            to="/app/settings"
+            onClick={onClose}
+            className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+              isSettingsActive
+                ? 'bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 font-semibold border border-teal-200/60 dark:border-teal-800/60'
+                : 'text-muted-foreground hover:text-foreground hover:bg-secondary/70'
+            }`}
           >
             <div className="flex items-center gap-2.5">
-              <Settings className="w-4 h-4 text-muted-foreground" />
-              <span>Workplace Settings</span>
+              <Settings
+                className={`w-4 h-4 transition-colors ${
+                  isSettingsActive
+                    ? 'text-teal-600 dark:text-teal-400'
+                    : 'text-muted-foreground group-hover:text-foreground'
+                }`}
+              />
+              <span>Account Settings</span>
             </div>
-            <span className="text-[10px] text-muted-foreground/80 bg-secondary/80 px-1.5 py-0.5 rounded font-mono">
-              Phase 14
-            </span>
-          </button>
+          </Link>
         </div>
       </div>
 
