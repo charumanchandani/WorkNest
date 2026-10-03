@@ -7,6 +7,7 @@ import {
   updatePreferences,
 } from '../controllers/profileController.js';
 import { protect } from '../middleware/authMiddleware.js';
+import { passwordChangeLimiter } from '../middleware/rateLimiter.js';
 
 const router = express.Router();
 
@@ -17,10 +18,11 @@ router.route('/')
   .get(getProfile)
   .patch(updateProfile);
 
-router.post('/change-password', changePassword);
+router.post('/change-password', passwordChangeLimiter, changePassword);
 
 router.route('/preferences')
   .get(getPreferences)
   .patch(updatePreferences);
 
 export default router;
+

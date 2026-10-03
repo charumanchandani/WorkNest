@@ -1,12 +1,23 @@
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
 import { ENV } from './config/env.js';
 import apiRoutes from './routes/index.js';
+import { mongoSanitizer } from './middleware/mongoSanitizer.js';
 import { notFoundHandler } from './middleware/notFound.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
 const app = express();
+
+// Production Security Headers
+app.use(
+  helmet({
+    contentSecurityPolicy: false, // Prevents interfering with client-side SPAs / dev proxy
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+  })
+);
 
 // Core middlewares
 app.use(
@@ -16,8 +27,11 @@ app.use(
   })
 );
 app.use(cookieParser());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// NoSQL Query Injection Protection
+app.use(mongoSanitizer);
 
 // Root health ping
 app.get('/', (req, res) => {
@@ -38,3 +52,4 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 export default app;
+

@@ -2,9 +2,15 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+const nodeEnv = process.env.NODE_ENV || 'development';
+
+if (nodeEnv === 'production' && !process.env.JWT_SECRET) {
+  throw new Error('FATAL: JWT_SECRET environment variable must be set in production mode.');
+}
+
 export const ENV = {
   PORT: process.env.PORT || 5000,
-  NODE_ENV: process.env.NODE_ENV || 'development',
+  NODE_ENV: nodeEnv,
   MONGODB_URI: process.env.MONGODB_URI || 'mongodb://localhost:27017/worknest',
   JWT_SECRET: process.env.JWT_SECRET || 'worknest_jwt_dev_secret_key_change_in_production',
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '7d',
@@ -14,3 +20,4 @@ export const ENV = {
   AI_API_KEY: process.env.AI_API_KEY || '',
   AI_MODEL: process.env.AI_MODEL || 'gemini-1.5-flash',
 };
+
