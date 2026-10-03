@@ -1,386 +1,293 @@
 # WorkNest — Workplace Operations & Employee Management Platform
 
-WorkNest is a modern, modular workplace operations and employee management platform designed to streamline human resources, task tracking, organization management, and team collaboration within enterprise environments.
+WorkNest is a modern, enterprise-grade workplace operations and human resources management platform built on the **MERN** stack (MongoDB, Express.js, React 18, Node.js). Designed for reliability, accessibility, and high performance, WorkNest streamlines organizational workflows, employee lifecycles, attendance tracking, leave requests, internal announcements, document vaults, operational analytics, and productivity workflows with fine-grained Role-Based Access Control (RBAC).
 
 ---
 
-## Overview & Purpose
+## 1. Problem Statement
 
-WorkNest delivers a consolidated operational workspace for organizations to manage employee lifecycles, attendance, leave requests, organizational hierarchies, internal communications, and task workflows with clean role-based access control and high architectural reliability.
+Modern organizations frequently suffer from fragmented operational tooling:
+- Attendance tracking, leave management, and task delegation often live in disconnected spreadsheets or single-purpose apps.
+- Internal documents and company announcements lack centralized role-scoped distribution and expiration lifecycles.
+- Managers lack real-time visibility into team capacity, active leaves, and project bottlenecks.
+- Developers and IT teams face security risks when credentials, mass-assignment vulnerabilities, and file traversal risks are not rigorously guarded at the API layer.
+
+**WorkNest solves this** by delivering a unified, secure, and accessible single-page application and RESTful backend where employees, managers, and administrators collaborate efficiently within a role-tailored environment.
 
 ---
 
-## Technology Stack
+## 2. Key Features
+
+- **Role-Based Workspaces**: Scoped interfaces and capabilities tailored for Employees, Department Managers, and Organization Administrators.
+- **Attendance Management**: Daily one-click check-in/check-out, late threshold detection, working hour tracking, and monthly summary KPIs.
+- **Leave Operations**: Leave applications, working-day calculations, quota balance tracking, and manager approval/rejection workflows with instant status notifications.
+- **Task Delegation & Tracking**: Scoped task queues, priority levels, deadline management, and status state machines (`TODO` &rarr; `IN_PROGRESS` &rarr; `COMPLETED`).
+- **Secure Document Vault**: Cryptographically opaque file storage, MIME type validation, file size enforcement, and path-traversal-proof binary downloads.
+- **Company Announcements**: Organization-wide broadcasts and department-targeted announcements with automated expiration handling.
+- **Real-Time In-App Notifications**: Unread counters, user preference filters, 10-second spam deduplication, and mark-as-read workflows.
+- **Audit Logging & Activity Feed**: Non-repudiation audit trails for sensitive changes, sanitizing credentials and tokens.
+- **Analytics & Operational Reports**: Role-scoped metrics, visual charts, and CSV/JSON data export with CSV formula injection mitigation.
+- **AI-Assisted Productivity**: Backend-only synthesis for task breakdowns, leave request drafting, document summarization, and workload recommendations.
+- **User Profile & Security**: Password policy enforcement, self-service contact updates, notification preferences, and Light/Dark/System theme switching.
+
+---
+
+## 3. Role-Based Access Control (RBAC)
+
+WorkNest enforces role authorization on both backend API middleware and frontend client route guards:
+
+| Role | Operational Scope & Permissions | Enrollment |
+| :--- | :--- | :--- |
+| **`EMPLOYEE`** | Self-service portal: Daily attendance check-in/out, personal attendance logs, leave balance review & application submission, personal assigned tasks, document downloads (organization & own department), company announcements, notification center, personal profile & password management. | Default for public registration |
+| **`MANAGER`** | Department leadership: Real-time team attendance monitoring, leave application review & approval/rejection for managed department staff, department task creation/reassignment & workload oversight, department-targeted announcements, and team analytics. | Assigned by Administrator |
+| **`ADMIN`** | Enterprise-wide administration: Full staff provisioning & account lifecycle management, department hierarchy configuration, document vault upload/archival, organization-wide announcements, comprehensive operational audit logs, and organization analytics. | Seeded / Organization Owner |
+
+---
+
+## 4. Technology Stack
 
 ### Frontend
-- **Framework**: React 18 with Vite
-- **Routing**: React Router DOM
-- **Styling**: Tailwind CSS with Semantic Design System Tokens
-- **HTTP Client**: Axios (with Credentials / HttpOnly Cookie support)
-- **Iconography**: Lucide React
-- **State & Context**: AuthContext, ThemeContext
+- **Core**: React 18 (SPA) with Vite build tooling
+- **Routing**: React Router DOM v6 with route-level code splitting (`React.lazy` & `Suspense`)
+- **Styling**: Tailwind CSS with custom semantic design system tokens
+- **HTTP Client**: Axios with configured interceptors, credentials support, and HttpOnly cookie transmission
+- **Icons**: Lucide React
+- **Theme**: Persistent Light, Dark, and System Default theme modes
 
 ### Backend
-- **Runtime**: Node.js
+- **Runtime**: Node.js (ES Modules)
 - **Framework**: Express.js
-- **Database**: MongoDB with Mongoose ODM
-- **Security & Auth**: JSON Web Tokens (JWT via HttpOnly Cookies), bcryptjs password hashing, CORS, Cookie-Parser
-- **Configuration**: Dotenv
+- **Database**: MongoDB with Mongoose ODM (with automatic fallback to in-memory MongoDB for zero-config local development)
+- **Authentication**: JSON Web Tokens (JWT) delivered via secure `HttpOnly` cookies + bcryptjs password hashing
+- **Security Middleware**: Helmet headers, custom sliding-window rate limiters, NoSQL injection sanitization, CORS origin controls
+- **File Handling**: Multer with strict MIME validation, cryptographic random file keys, and local upload storage
 
 ---
 
-## High-Level Architecture
-
-WorkNest follows a decoupled client-server architecture with clear separation of concerns:
+## 5. Architecture Overview & Project Structure
 
 ```
 WorkNest/
-├── frontend/                # Client application (React + Vite + Tailwind CSS)
+├── backend/
 │   ├── src/
-│   │   ├── components/      # UI components, App Shell, Employees, Departments, Attendance, Leave, Tasks, Documents, Announcements, Notifications, Analytics, Reports
-│   │   ├── layouts/         # AppLayout (Sidebar, Topbar, Content Outlet)
-│   │   ├── pages/           # LandingPage, LoginPage, RegisterPage, EmployeeDashboard, EmployeesPage, EmployeeDetailPage, DepartmentsPage, DepartmentDetailPage, AttendancePage, AttendanceManagePage, LeavePage, LeaveManagePage, TasksPage, TaskDetailPage, TasksManagePage, DocumentsPage, AnnouncementsPage, NotificationsPage, AnalyticsPage, ReportsPage
-│   │   ├── routes/          # AppRoutes, ProtectedRoute, PublicOnlyRoute
-│   │   ├── context/         # AuthContext, ThemeContext
-│   │   ├── hooks/           # useAuth, useTheme
-│   │   ├── services/        # api, authService, employeeService, departmentService, attendanceService, leaveService, taskService, documentService, announcementService, notificationService, activityService, analyticsService
-│   │   ├── utils/           # Helper functions & formatting utilities
-│   │   ├── constants/       # App constants and configuration tokens
-│   │   └── assets/          # Static assets and icons
-│   └── package.json
+│   │   ├── config/              # Database connection (db.js) & environment variables (env.js)
+│   │   ├── constants/           # Business rules, roles, quotas, file types, statuses
+│   │   ├── controllers/         # HTTP request orchestrators (auth, employee, task, leave, etc.)
+│   │   ├── middleware/          # authMiddleware, roleMiddleware, rateLimiter, mongoSanitizer, errorHandler
+│   │   ├── models/              # Mongoose schemas (User, Department, Attendance, Leave, Task, Document, etc.)
+│   │   ├── routes/              # Express API route modules
+│   │   ├── scripts/             # Automated test runners (testPhase10-15.js) & database seeder (seedUsers.js)
+│   │   ├── services/            # Core business logic & database queries
+│   │   └── utils/               # Token helpers, response formatters, CSV sanitizers
+│   ├── server.js                # Server bootstrap entrypoint
+│   ├── package.json
+│   └── .env.example
 │
-├── backend/                 # API server (Node.js + Express + MongoDB)
+├── frontend/
 │   ├── src/
-│   │   ├── config/          # Database connection & environment configuration
-│   │   ├── constants/       # attendance, leave, task constants (Timezone: Asia/Kolkata, quotas, priorities, statuses)
-│   │   ├── controllers/     # authController, employeeController, departmentController, attendanceController, leaveController, taskController, documentController, announcementController, notificationController, activityController, analyticsController, reportController, healthController
-│   │   ├── middleware/      # authMiddleware (protect), roleMiddleware (authorizeRoles), uploadMiddleware, errorHandler
-│   │   ├── models/          # User, Department, Attendance, Leave, LeaveBalance, Task, Document, Announcement, Notification, Activity
-│   │   ├── routes/          # authRoutes, employeeRoutes, departmentRoutes, attendanceRoutes, leaveRoutes, taskRoutes, documentRoutes, announcementRoutes, notificationRoutes, activityRoutes, analyticsRoutes, reportRoutes, healthRoutes
-│   │   ├── scripts/         # seedUsers.js, testPhase12.js
-│   │   ├── services/        # employeeService, departmentService, attendanceService, leaveService, taskService, documentService, announcementService, notificationService, activityService, analyticsService
-│   │   └── utils/           # token, responseHandler
-│   ├── server.js            # Server entrypoint & Express bootstrapping
-│   └── package.json
+│   │   ├── components/          # Reusable UI primitives, App Shell, navigation, modals, and module components
+│   │   ├── context/             # AuthContext, ThemeContext
+│   │   ├── hooks/               # Custom React hooks (useAuth, useTheme, etc.)
+│   │   ├── layouts/             # AppLayout with responsive sidebar & topbar
+│   │   ├── pages/               # Route page components (Dashboard, Employees, Tasks, Leave, AI, etc.)
+│   │   ├── routes/              # AppRoutes, ProtectedRoute, PublicOnlyRoute
+│   │   ├── services/            # Axios API service clients
+│   │   ├── utils/               # Formatters, date helpers, validation utilities
+│   │   └── constants/           # Frontend constants & API endpoint definitions
+│   ├── vite.config.js           # Vite bundle configuration with vendor chunk splitting
+│   ├── package.json
+│   └── .env.example
 │
+├── docs/
+│   ├── deployment.md            # Complete production deployment & hosting guide
+│   └── phase-15-audit.md        # Comprehensive security, accessibility, and QA audit
 ├── .gitignore
 └── README.md
 ```
 
 ---
 
-## Role-Based Access Control (RBAC)
+## 6. Authentication & Security Architecture
 
-WorkNest enforces role authorization on both backend endpoints and frontend route guards:
-
-| Role | Description | Enrollment / Access |
-| :--- | :--- | :--- |
-| **`EMPLOYEE`** | Self-service access for personal daily check-in/out, attendance history, monthly summary, leave application, personal leave history, balance review, personal assigned tasks view, task status progression, and profile details. | Default for public registration |
-| **`MANAGER`** | Department-level access for team availability monitoring, staff attendance logs, reviewing/approving/rejecting leave applications for managed department staff, assigning & editing department tasks, monitoring team workload, and viewing employee directory. | Organization-assigned / Seeded |
-| **`ADMIN`** | Enterprise-level access for full organization attendance, leave, and task oversight, employee provisioning, department management, and policy enforcement. | Organization-assigned / Seeded |
-
----
-
-## API Endpoints
-
-### 1. Authentication (`/api/auth`)
-
-| Method | Endpoint | Access | Description |
-| :--- | :--- | :--- | :--- |
-| `POST` | `/api/auth/register` | Public | Enrolls new user with `EMPLOYEE` role and sets HttpOnly JWT cookie |
-| `POST` | `/api/auth/login` | Public | Verifies credentials and sets HttpOnly JWT cookie |
-| `GET` | `/api/auth/me` | Private | Returns safe current authenticated user profile (`id`, `name`, `email`, `role`) |
-| `POST` | `/api/auth/logout` | Private/Public | Invalidate session and clears `worknest_token` cookie |
-
-### 2. Task Management (`/api/tasks`)
-
-| Method | Endpoint | Access | Description |
-| :--- | :--- | :--- | :--- |
-| `POST` | `/api/tasks` | Admin, Manager | Create and assign a new workplace task (validates assignee status, department, and deadline) |
-| `GET` | `/api/tasks` | Private (All) | Scoped task list with search, priority, status, department, and workload summary metrics |
-| `GET` | `/api/tasks/my` | Private (All) | Paginated personal tasks assigned to authenticated employee with summary counts |
-| `GET` | `/api/tasks/:id` | Private (Authorized) | Retrieve full task specifications, timeline, and assignment metadata |
-| `PATCH` | `/api/tasks/:id` | Admin, Manager | Update task title, description, priority, assignee, or deadline |
-| `PATCH` | `/api/tasks/:id/status` | Assignee, Admin, Manager | Progress task status (`TODO` &rarr; `IN_PROGRESS` &rarr; `COMPLETED`) with state transition validation |
-
-### 3. Leave Management (`/api/leaves`)
-
-| Method | Endpoint | Access | Description |
-| :--- | :--- | :--- | :--- |
-| `POST` | `/api/leaves` | Private (All) | Submit a leave request (validates working days, overlaps, and available quotas) |
-| `GET` | `/api/leaves/my` | Private (All) | Paginated personal leave requests with status, type, and date range filters |
-| `GET` | `/api/leaves/my/balance` | Private (All) | Retrieve annual leave quotas, used days, pending requests, and available balance |
-| `GET` | `/api/leaves/:id` | Private (Authorized) | Retrieve full details of a single leave application |
-| `PATCH` | `/api/leaves/:id/cancel` | Private (Owner) | Cancel a personal `PENDING` leave request |
-| `GET` | `/api/leaves/manage` | Admin, Manager | Scoped leave requests queue for management review with search and department filters |
-| `PATCH` | `/api/leaves/:id/approve` | Admin, Manager | Approve a pending leave request and update employee balance atomically |
-| `PATCH` | `/api/leaves/:id/reject` | Admin, Manager | Reject a pending leave request with optional review notes |
-
-### 4. Attendance Management (`/api/attendance`)
-
-| Method | Endpoint | Access | Description |
-| :--- | :--- | :--- | :--- |
-| `POST` | `/api/attendance/check-in` | Private (All) | Check in authenticated user for today (enforces daily uniqueness, late threshold 09:30 AM, and approved leave block) |
-| `POST` | `/api/attendance/check-out` | Private (All) | Check out authenticated user for today & calculates total working minutes |
-| `GET` | `/api/attendance/today` | Private (All) | Retrieve today's check-in/out state, active status, elapsed duration, or `ON_LEAVE` status |
-| `GET` | `/api/attendance/my` | Private (All) | Paginated personal attendance history with date range and status filters |
-| `GET` | `/api/attendance/my/summary` | Private (All) | Monthly summary KPIs (Present, Late, Half Day, Absent, Worked Hours) |
-| `GET` | `/api/attendance` | Admin, Manager | Scoped attendance monitoring list with search, department, and status filters |
-| `GET` | `/api/attendance/:id` | Private (Authorized) | Retrieve full attendance record details |
-
-### 5. Employee Management (`/api/employees`)
-
-| Method | Endpoint | Access | Description |
-| :--- | :--- | :--- | :--- |
-| `GET` | `/api/employees` | Admin, Manager | List employees with server-side pagination, search, role/status filters, and department filter |
-| `GET` | `/api/employees/:id` | Admin, Manager | Retrieve full profile details of a single employee |
-| `POST` | `/api/employees` | Admin | Create and provision a new employee account with optional department assignment |
-| `PATCH` | `/api/employees/:id` | Admin | Update employee profile information and department |
-| `PATCH` | `/api/employees/:id/status` | Admin | Activate or deactivate employee account (with last active admin protection) |
-
-### 6. Departments & Organization Structure (`/api/departments`)
-
-| Method | Endpoint | Access | Description |
-| :--- | :--- | :--- | :--- |
-| `GET` | `/api/departments` | Admin, Manager | List departments with pagination, search, status filter, and live employee counts |
-| `GET` | `/api/departments/:id` | Admin, Manager | Retrieve department details, leadership info, employee count, and assigned staff preview |
-| `POST` | `/api/departments` | Admin | Create a new department with unique name, uppercase code, and optional manager |
-| `PATCH` | `/api/departments/:id` | Admin | Update department name, code, description, and manager |
-| `PATCH` | `/api/departments/:id/status` | Admin | Activate or deactivate department (deactivation blocked if active employees remain) |
-| `PATCH` | `/api/departments/:id/manager` | Admin | Assign or remove department manager (requires active Manager or Admin user) |
-
-### 7. Document Vault (`/api/documents`)
-
-| Method | Endpoint | Access | Description |
-| :--- | :--- | :--- | :--- |
-| `POST` | `/api/documents` | Admin | Upload a new organizational/department document (`multipart/form-data`) with safe storage key |
-| `GET` | `/api/documents` | Private (All) | Scoped document repository with search, category, department, and expiration filters |
-| `GET` | `/api/documents/:id` | Private (Authorized) | Retrieve document metadata with strict RBAC permission verification |
-| `GET` | `/api/documents/:id/download` | Private (Authorized) | Secure binary stream download with auth check, path traversal prevention, and expiration guard |
-| `PATCH` | `/api/documents/:id` | Admin | Update document metadata, category, visibility, or expiration date |
-| `PATCH` | `/api/documents/:id/archive` | Admin | Archive a document to remove from standard employee listings |
-
-- **Storage & Security**: Clean abstraction layer storing files in `backend/uploads/` (git-ignored) with cryptographic opaque keys. Prevents path traversal and never exposes filesystem paths.
-- **Supported File Types**: PDF, Word (`.doc`, `.docx`), Excel (`.xls`, `.xlsx`), PowerPoint (`.ppt`, `.pptx`), Plain Text (`.txt`), Images (`.png`, `.jpg`, `.jpeg`). Maximum file size: 10 MB.
-- **Document Access & RBAC**:
-  - `EMPLOYEE`: View & download active, non-expired organization documents and own department documents.
-  - `MANAGER`: View & download organization documents and documents for managed departments.
-  - `ADMIN`: Full repository management (upload, edit, archive, download, view all).
-
-### 8. Company Announcements (`/api/announcements`)
-
-| Method | Endpoint | Access | Description |
-| :--- | :--- | :--- | :--- |
-| `POST` | `/api/announcements` | Admin, Manager | Create an announcement (Admin: Org/Dept; Manager: managed Department only) |
-| `GET` | `/api/announcements` | Private (All) | Paginated announcements feed (Employees: published/non-expired; Managers/Admins: manage queue) |
-| `GET` | `/api/announcements/:id` | Private (Authorized) | Retrieve full announcement details with audience and author metadata |
-| `PATCH` | `/api/announcements/:id` | Admin, Manager | Update draft announcement content and parameters |
-| `PATCH` | `/api/announcements/:id/publish` | Admin, Manager | Transition `DRAFT` &rarr; `PUBLISHED` with server-stamped publication date |
-| `PATCH` | `/api/announcements/:id/archive` | Admin, Manager | Transition `DRAFT`/`PUBLISHED` &rarr; `ARCHIVED` |
-
-- **Targeting & Delivery**:
-  - `ORGANIZATION`: Broadcasts to all active company staff.
-  - `DEPARTMENT`: Targeted specifically to active members of the selected department.
-- **Workflow & Expiration**: Structured state machine (`DRAFT` &rarr; `PUBLISHED` &rarr; `ARCHIVED`). Plain text content only (no HTML injection). Expired announcements automatically disappear from staff feeds without background cron jobs.
-
-### 9. In-App Notifications (`/api/notifications`)
-
-| Method | Endpoint | Access | Description |
-| :--- | :--- | :--- | :--- |
-| `GET` | `/api/notifications` | Private (All) | Paginated notifications feed strictly scoped to authenticated user with unread and type filters |
-| `GET` | `/api/notifications/unread-count` | Private (All) | Live unread notification counter for badge displays and polling |
-| `PATCH` | `/api/notifications/:id/read` | Private (Owner) | Mark a specific notification as read with server timestamp |
-| `PATCH` | `/api/notifications/read-all` | Private (All) | Mark all pending notifications for current user as read |
-
-- **Notification Triggers**:
-  - **Leave**: Leave submitted (&rarr; department manager), Leave approved/rejected (&rarr; employee), Leave cancelled (&rarr; department manager).
-  - **Tasks**: Task assigned/reassigned (&rarr; assignee), Task completed/updated (&rarr; assigner).
-  - **Documents**: Document uploaded (&rarr; eligible organization or department members).
-  - **Announcements**: Announcement published (&rarr; targeted staff or department members).
-- **Deduplication**: 10-second deduplication threshold prevents spamming identical notifications.
-
-### 10. Operational Activity & Audit Trail (`/api/activities`)
-
-| Method | Endpoint | Access | Description |
-| :--- | :--- | :--- | :--- |
-| `GET` | `/api/activities` | Private (All) | Paginated audit feed with entity type, action, actor, and date filters |
-
-- **RBAC Scoping**:
-  - `EMPLOYEE`: Strictly view personal operational activity and targeted workflow events.
-  - `MANAGER`: View team activities across managed departments in addition to personal logs.
-  - `ADMIN`: Organization-wide comprehensive audit and operational timeline.
-- **Security & Privacy**: Automatically strips passwords, tokens, full document payloads, and sensitive credentials from activity logs.
-
-### 11. Workplace Analytics & Insights (`/api/analytics`)
-
-| Method | Endpoint | Access | Description |
-| :--- | :--- | :--- | :--- |
-| `GET` | `/api/analytics/overview` | Private (All) | Role-scoped executive overview KPIs (workforce, today's attendance, pending leaves, task pipeline, activity count) |
-| `GET` | `/api/analytics/attendance` | Private (All) | Attendance metrics, total/average hours, rate, and daily trend time-series |
-| `GET` | `/api/analytics/leave` | Private (All) | Leave requests, approved working days, category distribution, and department usage |
-| `GET` | `/api/analytics/tasks` | Private (All) | Task turnaround timings, priority breakdown, completion rate, and department workloads |
-| `GET` | `/api/analytics/employees` | Admin, Manager | Staff distribution, active/inactive headcount, role allocation, and recent joinings |
-| `GET` | `/api/analytics/departments` | Admin, Manager | Departmental workload, completion rates, today's attendance rate, and approved leave usage |
-
-- **Date Filtering**: Supports `from` and `to` date query parameters (defaults to the current calendar month).
-- **RBAC Scoping**:
-  - `EMPLOYEE`: Personal attendance, leave, task metrics, and personal activity counts only.
-  - `MANAGER`: Scoped strictly to managed team members and assigned departments.
-  - `ADMIN`: Full enterprise-wide organizational analytics.
-
-### 12. Operational Reports & Data Export (`/api/reports`)
-
-| Method | Endpoint | Access | Description |
-| :--- | :--- | :--- | :--- |
-| `GET` | `/api/reports/:type` | Private (All) | Generate verified operational reports in JSON or CSV format |
-
-- **Supported Report Types**:
-  1. `attendance`: Daily clock-in/out stamps, worked hours, and status classifications.
-  2. `leave`: Approved and pending leave requests, total days, reasons, and review notes.
-  3. `tasks`: Assignment rosters, priority ratings, due dates, overdue statuses, and completion timestamps.
-  4. `employees`: Staff directory, job titles, department assignments, and hire dates (Admin & Manager only).
-  5. `departments`: Headcounts, leadership, task completion rates, and attendance rates (Admin & Manager only).
-- **Parameters**: `from`, `to`, `department`, `status`, `format` (`json` or `csv`).
-- **CSV Security**: Sanitizes leading formula characters (`=`, `+`, `-`, `@`, `\t`, `\r`) with single-quote escaping to prevent CSV spreadsheet injection (CWE-1236). Excludes all sensitive authentication credentials and tokens.
-
-### 13. AI Assistance Layer (`/api/ai`)
-
-WorkNest includes an optional, server-side AI assistance layer designed to synthesize workplace data, accelerate routine drafting, and provide operational productivity insights.
-
-| Method | Endpoint | Access | Description |
-| :--- | :--- | :--- | :--- |
-| `GET` | `/api/ai/status` | Private (All) | Retrieve server AI operational status, active provider, and model information |
-| `POST` | `/api/ai/tasks/:id/summary` | Private (Authorized) | Generate concise summaries, key points, blockers, and next steps for a specific task |
-| `POST` | `/api/ai/leave/draft` | Private (All) | Generate professional, context-aware leave request drafts with handover recommendations |
-| `POST` | `/api/ai/documents/:id/summary` | Private (Authorized) | Synthesize document metadata and plain-text contents (.txt, .md, .csv) with action items |
-| `POST` | `/api/ai/productivity/insight` | Private (All) | Generate role-scoped productivity observations, workload alerts, and recommendations |
-
-- **Security & Privacy Guardrails**:
-  - **Zero Key Exposure**: AI API keys (`AI_API_KEY`) remain strictly on the backend and are never sent to the browser or stored in frontend state.
-  - **Rate Limiting**: Built-in sliding-window rate limiter limits AI requests to 20 per minute per user (returns HTTP 429 when exceeded).
-  - **Non-Sensitive Profiling**: Focuses strictly on operational metrics (task counts, attendance rates, leave distribution) and never profiles health or personal user attributes.
-  - **Graceful Fallback**: When `AI_ENABLED=false` or when an external AI provider is unavailable, WorkNest falls back gracefully with deterministic local mock synthesis or clean 503 service advisories, preserving 100% of core workplace operations.
-
-### 14. User Profile & Settings (`/api/profile`)
-
-WorkNest provides user profile management, account settings, credential security controls, and granular in-app notification preferences across all roles (`EMPLOYEE`, `MANAGER`, `ADMIN`).
-
-| Method | Endpoint | Access | Description |
-| :--- | :--- | :--- | :--- |
-| `GET` | `/api/profile` | Private (All) | Retrieve safe authenticated user profile, department data, and notification preferences |
-| `PATCH` | `/api/profile` | Private (All) | Update personal contact details (whitelisted fields: `firstName`, `lastName`, `phone`, `location`) |
-| `POST` | `/api/profile/change-password` | Private (All) | Change password with strong policy enforcement and seamless session cookie refresh |
-| `GET` | `/api/profile/preferences` | Private (All) | Retrieve in-app notification category preferences |
-| `PATCH` | `/api/profile/preferences` | Private (All) | Update whitelisted notification preference toggles |
-
-- **Security & Mass-Assignment Protection**:
-  - **Identity Derivation**: User identity is derived strictly from verified JWT cookie sessions (`req.user._id`), never from request bodies.
-  - **Restricted Fields**: Self-editing of `role`, `department`, `employeeId`, `account status`, `isActive`, or `joiningDate` is strictly prohibited.
-  - **Password Security Policy**: Minimum 8 characters, at least one uppercase letter, one lowercase letter, and one number. Validates current password via bcrypt and rejects identical current/new passwords.
-  - **Notification Filtering**: Notification generation respects user preference categories (`taskAssignments`, `taskUpdates`, `leaveUpdates`, `announcements`, `documents`, `system`).
-  - **Appearance Customization**: Seamless Light, Dark, and System Default theme support with automatic OS scheme synchronization.
+- **HttpOnly Cookie Authentication**: JWT access tokens are set in `HttpOnly`, `SameSite`, `Secure` cookies (`worknest_token`), shielding tokens from XSS theft.
+- **No Insecure Fallback**: In production mode (`NODE_ENV=production`), the backend strictly refuses to start if `JWT_SECRET` is missing or set to default placeholders.
+- **Sliding-Window Rate Limiting**: Built-in in-memory rate limiters protect authentication (`/api/auth/login`, `/api/auth/register`), password changes (`/api/profile/change-password`), and AI assistance endpoints (`/api/ai/*`).
+- **NoSQL Query Injection Defense**: Custom middleware recursively removes all dangerous `$` and `.` operators from request bodies, URL params, and query strings.
+- **Mass-Assignment Guardrails**: Profile updates strictly whitelist modifiable fields (`firstName`, `lastName`, `phone`, `location`), blocking self-promotion of `role`, `department`, or `employeeId`.
+- **CSV Injection Prevention**: All exported CSV reports sanitize cell formulas starting with `=`, `+`, `-`, `@`, `\t`, or `\r` via single-quote escaping (CWE-1236).
+- **Zero Client-Side Secret Leakage**: AI provider keys, JWT secrets, and database credentials remain strictly on the backend and never enter Vite bundles.
 
 ---
 
-## Getting Started
+## 7. Core Modules Overview
+
+### 1. Employees & Provisioning (`/api/employees`)
+- Full directory listing with server-side pagination, search by name/email/ID, and department/role filtering.
+- Administrator employee creation with automatic employee ID generation and secure initial credentials.
+- Account deactivation protection preventing the lockout of the last active administrator.
+
+### 2. Departments & Hierarchy (`/api/departments`)
+- Department catalog with uppercase code validation and manager assignments.
+- Real-time employee headcount aggregation and leader association.
+- Deletion safeguards preventing deactivation of departments with active staff.
+
+### 3. Attendance Management (`/api/attendance`)
+- Daily check-in and check-out with automatic worked hours computation.
+- Enforces single daily check-in and automatically flags late arrivals (past 09:30 AM).
+- Blocks check-in on approved leave dates and displays `ON_LEAVE` status.
+
+### 4. Leave Management (`/api/leaves`)
+- Annual leave quota balances (`Casual`, `Sick`, `Annual`, `Unpaid`).
+- Prevents overlapping applications and validates sufficient remaining balance.
+- Manager/Admin approval and rejection workflow with automatic balance deduction.
+
+### 5. Task Workflows (`/api/tasks`)
+- Task creation, delegation, priority rating (`LOW`, `MEDIUM`, `HIGH`, `URGENT`), and deadline tracking.
+- Strict state progression (`TODO` &rarr; `IN_PROGRESS` &rarr; `COMPLETED`) validated against assignee permissions.
+
+### 6. Document Vault (`/api/documents`)
+- Multi-format file uploads (PDF, Word, Excel, PowerPoint, Images, Text) up to 10 MB.
+- Path traversal protection and opaque storage keys preventing direct filesystem access.
+- Role-scoped repository with automatic expiration suppression for general staff.
+
+### 7. Company Announcements (`/api/announcements`)
+- Enterprise broadcasts (`ORGANIZATION`) and department-scoped bulletins (`DEPARTMENT`).
+- Publication lifecycle (`DRAFT` &rarr; `PUBLISHED` &rarr; `ARCHIVED`) with automatic expiration.
+
+### 8. In-App Notifications (`/api/notifications`)
+- Scoped notification inbox with real-time unread badge counter.
+- Automated triggers for task assignments, leave status updates, document uploads, and announcements.
+- Granular user preference toggles allowing individual staff to customize notification categories.
+
+### 9. Activity & Audit Trail (`/api/activities`)
+- Centralized audit trail recording operational events, actor metadata, and timestamps.
+- RBAC scoping: Employees see personal events, Managers see team events, Admins see organization-wide logs.
+
+### 10. Workplace Analytics & Insights (`/api/analytics`)
+- Executive KPIs: Workforce count, attendance rates, pending leaves, and active task pipelines.
+- Historical trend analysis with customizable date ranges (`from` / `to`).
+
+### 11. Operational Reports & Data Export (`/api/reports`)
+- Generates structured JSON or CSV data exports for Attendance, Leaves, Tasks, Employees, and Departments.
+- Sanitized against CSV injection vulnerabilities.
+
+### 12. AI Assistance Layer (`/api/ai`)
+- Optional productivity features: Task breakdown synthesis, professional leave request drafting, document plain-text summarization, and workload recommendations.
+- Works with Google Gemini or deterministic local mock synthesis when no API key is provided.
+
+### 13. Profile & Account Settings (`/api/profile`)
+- Self-service profile contact updates.
+- Password change with bcrypt verification and session cookie refresh.
+- In-app notification category preference controls and theme customization.
+
+---
+
+## 8. API Overview
+
+| Module | Route Prefix | Primary Endpoints | Access |
+| :--- | :--- | :--- | :--- |
+| **Auth** | `/api/auth` | `/login`, `/register`, `/me`, `/logout` | Public / Authenticated |
+| **Employees** | `/api/employees` | `GET /`, `POST /`, `GET /:id`, `PATCH /:id`, `PATCH /:id/status` | Admin, Manager |
+| **Departments** | `/api/departments`| `GET /`, `POST /`, `GET /:id`, `PATCH /:id`, `PATCH /:id/status` | Admin, Manager |
+| **Attendance** | `/api/attendance` | `/check-in`, `/check-out`, `/today`, `/my`, `/my/summary`, `GET /` | All (Scoped) |
+| **Leave** | `/api/leaves` | `POST /`, `/my`, `/my/balance`, `/manage`, `/:id/approve`, `/:id/reject` | All (Scoped) |
+| **Tasks** | `/api/tasks` | `POST /`, `GET /`, `/my`, `/:id`, `PATCH /:id`, `PATCH /:id/status` | All (Scoped) |
+| **Documents** | `/api/documents` | `POST /`, `GET /`, `/:id`, `/:id/download`, `/:id/archive` | All (Scoped) |
+| **Announcements**| `/api/announcements`| `POST /`, `GET /`, `/:id`, `/:id/publish`, `/:id/archive` | All (Scoped) |
+| **Notifications**| `/api/notifications`| `GET /`, `/unread-count`, `/:id/read`, `/read-all` | Authenticated |
+| **Activities** | `/api/activities` | `GET /` | All (Scoped) |
+| **Analytics** | `/api/analytics` | `/overview`, `/attendance`, `/leave`, `/tasks`, `/employees`, `/departments` | All (Scoped) |
+| **Reports** | `/api/reports` | `GET /:type` (`attendance`, `leave`, `tasks`, `employees`, `departments`) | All (Scoped) |
+| **AI** | `/api/ai` | `/status`, `/tasks/:id/summary`, `/leave/draft`, `/documents/:id/summary`, `/productivity/insight` | All (Scoped) |
+| **Profile** | `/api/profile` | `GET /`, `PATCH /`, `POST /change-password`, `GET /preferences`, `PATCH /preferences` | Authenticated |
+| **Health** | `/api/health` | `GET /` | Public |
+
+---
+
+## 9. Local Development & Setup
 
 ### Prerequisites
 - **Node.js**: v18.x or v20.x+
-- **npm** or **yarn** / **pnpm**
-- **MongoDB**: Local MongoDB instance or MongoDB Atlas connection URI
+- **npm** (or yarn / pnpm)
+- **MongoDB**: Optional local MongoDB daemon (if not running, WorkNest automatically launches an embedded in-memory MongoDB database)
 
----
-
-### Installation & Setup
-
-#### 1. Clone the repository
+### 1. Clone the repository
 ```bash
 git clone https://github.com/charumanchandani/WorkNest.git
 cd WorkNest
 ```
 
-#### 2. Backend Setup
+### 2. Backend Setup
 ```bash
 cd backend
 npm install
 cp .env.example .env
-```
-Configure your environment variables in `backend/.env`.
-
-Start the backend development server:
-```bash
 npm run dev
-# or for production:
-npm start
 ```
-By default, the backend API will run on `http://localhost:5000`.
+The backend API initializes on `http://localhost:5000`.
 
-##### Seed Development Test Accounts (Optional):
-```bash
-npm run seed
-```
-Creates default development accounts & standard departments:
-- **Admin**: `admin@worknest.io` / `Password123!`
-- **Manager**: `manager@worknest.io` / `Password123!`
-- **Employee**: `employee@worknest.io` / `Password123!`
-
-#### 3. Frontend Setup
+### 3. Frontend Setup
 ```bash
 cd ../frontend
 npm install
 cp .env.example .env
-```
-Configure `VITE_API_BASE_URL` in `frontend/.env` if running on a custom port/domain.
-
-Start the frontend development server:
-```bash
 npm run dev
 ```
-Open `http://localhost:5173` in your browser.
+The frontend Vite development server initializes on `http://localhost:5173`.
 
----
+### 4. Development Seed Accounts
+When using development mode or the in-memory database, the database is automatically seeded with test accounts:
 
-## Environment Variables
+| Role | Email | Password |
+| :--- | :--- | :--- |
+| **Admin** | `admin@worknest.io` | `Password123!` |
+| **Manager** | `manager@worknest.io` | `Password123!` |
+| **Employee** | `employee@worknest.io` | `Password123!` |
 
-### Backend (`backend/.env.example`)
-```env
-PORT=5000
-NODE_ENV=development
-MONGODB_URI=mongodb://localhost:27017/worknest
-JWT_SECRET=your_super_secret_jwt_key_change_in_production
-JWT_EXPIRES_IN=7d
-CLIENT_URL=http://localhost:5173
-
-# Optional AI Assistance Layer (Phase 13)
-AI_ENABLED=true
-AI_PROVIDER=mock       # 'mock' or 'gemini'
-AI_API_KEY=            # Optional Gemini API key
-AI_MODEL=gemini-1.5-flash
-```
-
-### Frontend (`frontend/.env.example`)
-```env
-VITE_API_BASE_URL=http://localhost:5000/api
+You can also manually reseed at any time:
+```bash
+cd backend && npm run seed
 ```
 
 ---
 
-## Quality & Build Scripts
+## 10. Testing & Quality Commands
 
-### Frontend
-- `npm run dev`: Starts the local Vite development server
-- `npm run build`: Compiles production bundle
-- `npm run lint`: Runs ESLint checks
-- `npm run preview`: Locally previews production build
+WorkNest includes standalone automated regression test suites for all major phases, as well as linting and build validation commands:
 
-### Backend
-- `npm run dev`: Runs the server with Nodemon auto-reloading
-- `npm run seed`: Seeds development test accounts and standard departments
-- `npm start`: Runs the server in production mode
-- `npm run lint`: Runs ESLint / code style checks
+```bash
+# Backend Quality Checks & Regressions
+cd backend
+npm run lint                     # ESLint verification
+node src/scripts/testPhase15.js  # Phase 15: Testing, Security & QA (31 tests)
+node src/scripts/testPhase14.js  # Phase 14: Profile & Settings (23 tests)
+node src/scripts/testPhase13.js  # Phase 13: AI Assistance Layer (14 tests)
+node src/scripts/testPhase12.js  # Phase 12: Analytics & Reports (28 tests)
+node src/scripts/testPhase11.js  # Phase 11: Notifications & Activity (21 tests)
+node src/scripts/testPhase10.js  # Phase 10: Documents & Announcements (19 tests)
+
+# Frontend Quality Checks & Production Build
+cd ../frontend
+npm run lint                     # ESLint verification
+npm run build                    # Compiles optimized production bundle into dist/
+npm run preview                  # Previews production bundle locally
+```
 
 ---
 
-## License
+## 11. Deployment Guidance & Production Considerations
+
+For step-by-step production deployment instructions, refer to [`docs/deployment.md`](docs/deployment.md).
+
+### Summary of Production Considerations:
+1. **Frontend Hosting**: Static hosting on Vercel, Netlify, or Cloudflare Pages with single-page application rewrite rules enabled.
+2. **Backend Hosting**: Container/Node.js hosting on Render, Railway, Fly.io, or AWS EC2.
+3. **Database**: MongoDB Atlas replica set with TLS encryption.
+4. **File Storage**: Local uploads (`backend/uploads/`) are fully self-contained for VPS / single-server deployments. For ephemeral container hosts (e.g. Render free tier), configure S3/Cloudinary object storage to retain uploaded documents across restarts.
+5. **Cookie Security**: Ensure `NODE_ENV=production`, `CLIENT_URL` matches the deployed frontend domain with HTTPS, and `JWT_SECRET` is set to a cryptographically strong 64+ character random string.
+
+---
+
+## 12. License
 
 This project is licensed under the MIT License.

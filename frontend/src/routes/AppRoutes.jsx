@@ -87,6 +87,7 @@ export const AppRoutes = () => {
 
           {/* Phase 13 AI Assistance Hub */}
           <Route path="ai-assistant" element={<AIAssistantPage />} />
+          <Route path="ai" element={<Navigate to="/app/ai-assistant" replace />} />
 
           {/* Phase 12 Analytics Dashboard */}
           <Route path="analytics" element={<AnalyticsPage />} />
